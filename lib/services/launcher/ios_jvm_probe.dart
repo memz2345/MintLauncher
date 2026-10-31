@@ -210,9 +210,9 @@ class IosJvmProbe {
       if (entry.name.endsWith('/Contents/Home/lib/server/libjvm.dylib')) {
         var dir = p.dirname(outPath); // .../server
         for (var i = 0; i < 3; i++) {
-          dir = p.dirname(dir); // Home → Contents → <jdk>
+          dir = p.dirname(dir); // server → lib → Home（三次正好落在 Home）
         }
-        home = p.join(dir, 'Contents', 'Home');
+        home = dir;
       }
     }
     buf.writeln('    写出 $written 个文件');
