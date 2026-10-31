@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:typed_data';
 import 'dart:io';
 import 'dart:isolate';
 
 import 'package:archive/archive.dart';
-import 'package:archive/archive_io.dart' show extractArchiveToDisk;
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as p;
 
@@ -58,9 +58,9 @@ class IosJvmProbe {
       buf.writeln('[2] 下载到 ${p.basename(tarPath)}...');
       await _download(link, tarPath, buf);
 
-      // ── 3. 解压 ──
+      // ── 3. 解压（手动逐条写，顺带打印清单定位问题）──
       buf.writeln('[3] 解压...');
-      final home = _extractSync(tarPath, p.join(docsPath, 'jvm_probe'));
+      final home = _extractSync(tarPath, p.join(docsPath, 'jvm_probe'), buf);
       buf.writeln('    java.home=$home');
 
       // ── 4. dlopen libjvm ──
@@ -187,17 +187,48 @@ class IosJvmProbe {
     }
   }
 
-  static String _extractSync(String tarPath, String destRoot) {
+  static String _extractSync(
+    String tarPath,
+    String destRoot,
+    StringBuffer buf,
+  ) {
     final tarBytes = GZipDecoder().decodeBytes(File(tarPath).readAsBytesSync());
     final archive = TarDecoder().decodeBytes(tarBytes);
-    extractArchiveToDisk(archive, destRoot);
-    final root = Directory(destRoot);
-    final jdkDir = root
-        .listSync()
-        .whereType<Directory>()
-        .toList()
-        .firstWhere((d) => File(p.join(d.path, 'Contents', 'Home')).existsSync());
-    return p.join(jdkDir.path, 'Contents', 'Home');
+    String? home;
+    var written = 0;
+    for (final entry in archive.files) {
+      if (!entry.isFile) continue;
+      final outPath = p.join(destRoot, entry.name);
+      if (!p.normalize(outPath).startsWith(p.normalize(destRoot))) {
+        continue; // 防路径穿越
+      }
+      File(outPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(entry.readBytes() ?? Uint8List(0));
+      written++;
+      // <destRoot>/<jdk>/Contents/Home/lib/server/libjvm.dylib
+      if (entry.name.endsWith('/Contents/Home/lib/server/libjvm.dylib')) {
+        var dir = p.dirname(outPath); // .../server
+        for (var i = 0; i < 3; i++) {
+          dir = p.dirname(dir); // Home → Contents → <jdk>
+        }
+        home = p.join(dir, 'Contents', 'Home');
+      }
+    }
+    buf.writeln('    写出 $written 个文件');
+    if (home == null) {
+      final root = Directory(destRoot);
+      final listing = root.existsSync()
+          ? root
+                .listSync()
+                .map((e) => p.basename(e.path))
+                .take(20)
+                .join(', ')
+          : '(目录不存在)';
+      buf.writeln('    destRoot 顶层: $listing');
+      throw '解压后没找到 Contents/Home';
+    }
+    return home;
   }
 }
 
