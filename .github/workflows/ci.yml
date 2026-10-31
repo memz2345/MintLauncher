@@ -176,7 +176,9 @@ jobs:
             local name="$1"; shift
             local env_args=()
             for kv in "$@"; do env_args+=("SIMCTL_CHILD_$kv"); done
-            # 偶发首启闪退（无异常日志）：进程死了就重拉，最多 3 次。
+            # 首启可能被 iOS watchdog 杀（首启要导入 126MB 主题包）：进程死了
+            # 立即重拉，最多 3 次；第三次后主题已导入完成（prefs 持久化），
+            # 重拉是秒起的。
             for attempt in 1 2 3; do
               if [ ${#env_args[@]} -gt 0 ]; then
                 env "${env_args[@]}" xcrun simctl launch --console-pty \
@@ -185,10 +187,19 @@ jobs:
                 xcrun simctl launch --console-pty \
                   "$UDID" dev.mint.mint >"build/shots/console-$name.log" 2>&1 &
               fi
-              # 等首帧：白屏/黑屏截图几乎不占字节，按文件大小轮询。
+              # launch 输出 "dev.mint.mint: <pid>"，用于存活检查（simulator
+              # 内进程对主机可见）。
+              sleep 1
+              local pid
+              pid=$(head -1 "build/shots/console-$name.log" | sed -E 's/.*: *//')
               local ok=0
               for _ in $(seq 1 48); do
                 sleep 5
+                # 进程死了：立即重拉（不然轮询会被桌面截图骗过 content 判定）。
+                if [ -n "$pid" ] && ! ps -p "$pid" >/dev/null 2>&1; then
+                  echo "shot $name: attempt $attempt 进程退出（疑似 watchdog），重拉"
+                  break
+                fi
                 xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
                 if [ -f "build/shots/ios-$name.png" ] &&
                    [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 100000 ]; then
@@ -197,12 +208,11 @@ jobs:
                 fi
               done
               if [ "$ok" = 1 ]; then
-                # 首帧后再等页面钩子（MINT_TEST_PAGE）push 完成，重截一张。
+                # 首帧后再等页面稳定，重截一张。
                 sleep 6
                 xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
                 break
               fi
-              echo "shot $name: attempt $attempt 无内容（应用疑似闪退），重试"
               xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
               sleep 2
             done
