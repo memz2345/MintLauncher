@@ -7,13 +7,20 @@
 ## CI（GitHub Actions，`.github/workflows/ci.yml`）
 
 - **Linux 兼容测试（ubuntu-latest）**：analyze → 174 项单测 → `flutter build linux` →
-  三段冒烟 —— ① **Xvfb**（纯 X11、软渲染 Impeller GLES，进程存活 20s+ + 截图）；
-  ② **weston headless**（`GDK_BACKEND=wayland` 走 Wayland 路径，无 KDE 模糊协议时
-  能力探测如实降级）；③ **KWin 模糊探针**（Xvfb 里跑真 `kwin_x11`，`MINT_TEST_BACKDROP`
-  启动即应用材质，`xprop` 验证窗口上真的出现
-  `_KDE_NET_WM_BLUR_BEHIND_REGION(CARDINAL) = 0`）。
-  产物（三环境截图 + 应用 / 合成器日志）上传到 Actions artifact `linux-smoke`，
+  多段冒烟 —— ① **Xvfb**（纯 X11、软渲染 Impeller GLES，进程存活 20s+ + 截图）；
+  ② **多场景截图巡游**（同一个 bundle 用环境变量钩子反复拉起：首页 / 下载中心 /
+  设置 / 版本管理 / Fluent 风格 / 深色主题各截一张）；③ **weston headless**
+  （`GDK_BACKEND=wayland` 走 Wayland 路径，无 KDE 模糊协议时能力探测如实降级）；
+  ④ **KWin 模糊探针**（Xvfb 里跑真 `kwin_x11`，`MINT_TEST_BACKDROP` 启动即应用材质，
+  `xprop` 验证窗口上真的出现 `_KDE_NET_WM_BLUR_BEHIND_REGION(CARDINAL) = 0`）。
+  产物（全场景截图 + 应用 / 合成器日志）上传到 Actions artifact `linux-smoke`，
   构建产物上传为 `linux-bundle`。
+- **Linux 游戏启动实测（独立 job）**：Xvfb + `LIBGL_ALWAYS_SOFTWARE=1 /
+  GALLIUM_DRIVER=llvmpipe`（即「CPU 软件渲染」后端在 Linux 的实现路径）下跑
+  `dart run tool/e2e_launch_test.dart 1.20.4` —— 清单 → 安装（库 / 客户端 /
+  资源 / natives）→ 缺 Java 自动下载 Mojang Linux 运行时 → 起游戏进程 →
+  观察 90 秒；通过标准 = 日志出现 `LWJGL Version` 且无主类异常。
+  `MINT_E2E_MIRROR=official` 直连官方源（海外机器更快）。
 - **Windows 构建与测试**、**Android Debug APK 编译检查** 同跑，防跨平台回归。
 
 ## 平台
@@ -56,6 +63,19 @@
   由原生按下信号在按钮 Stack 里自绘扩散圆（Material 手动种 InkRipple 在
   当前树上实测画不出来），按下即见、松手才最大化。关闭按钮
   hover 仍变 Windows 红。支持拖动、双击最大化/还原、右键系统菜单、贴边缩放。
+- **自绘窗口标题栏（Linux，2026-10-31 起）**：同一套 Flutter 44px 标题栏。
+  `main.dart` 在窗口 show 之前调 `LinuxWindowChrome.ensureCustomFrame()` →
+  runner（`linux/runner/window_chrome.cc`）`gtk_window_set_decorated(FALSE)`
+  摘掉 GTK 原生装饰（不闪原生标题栏）；拖动 / 贴边缩放直接用 window_manager
+  的 Linux 实现（`gtk_window_begin_move_drag` / `begin_resize_drag`）。
+  **三大金刚图标 = 当前 GTK 图标主题的 `window-*-symbolic`**（Adwaita /
+  Breeze / Yaru 都带）：Dart 把前景色传给 runner，`gtk_icon_info_load_symbolic`
+  按 fg 着色渲染成 32px PNG 回传，Flutter 按 16dp 画 —— 换系统主题图标
+  也跟着换皮，和 Windows 用 Segoe 系统字形是同一个思路；主题没有这组
+  图标时回退 Material 矢量。悬停态 / 按下 ripple / 双击最大化 / 右键
+  （Linux 走 Flutter 自绘菜单，没有 Windows 那套 GetSystemMenu）全部
+  与 Windows 一致；日志子窗口在 Linux 保留 GTK 原生装饰（chrome 通道
+  只注册在主窗口引擎上，避免双标题栏）。
   Win11 悬停最大化按钮会弹出 Snap Layouts（FlutterView 把该热区让给顶层
   `WM_NCHITTEST` 并返回 `HTMAXBUTTON`），该按钮的 hover / 点击由原生
   `mint/window_chrome` 回传给 Flutter，所以和另外两个金刚表现一致。

@@ -11,6 +11,8 @@ import 'package:mint/services/download_center.dart';
 import 'package:mint/services/app_locale_bridge.dart';
 import 'package:mint/services/linux_window_chrome.dart';
 import 'package:mint/services/launcher/account.dart' show createOfflineAccount;
+import 'package:mint/services/launcher/android_data_dir.dart'
+    show androidDataDirLookup;
 import 'package:mint/services/launcher/game_dir.dart' as game_dir;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
@@ -58,6 +60,12 @@ const _kTestVTouch = bool.fromEnvironment('MINT_TEST_VTOUCH');
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Android 数据目录查询走 MethodChannel，注入给 GameDir（headless 的
+  // e2e 工具链不 import Flutter，见 game_dir.dart）。
+  if (Platform.isAndroid) {
+    game_dir.GameDir.androidDataDirLookup = androidDataDirLookup;
+  }
 
   // 部分国产 ROM / 模拟器镜像会吞掉应用进程的 logcat，Flutter 异常只剩
   // 屏幕上那一小行 —— 同步落一份到数据目录（和 mint-input.log 同套路），

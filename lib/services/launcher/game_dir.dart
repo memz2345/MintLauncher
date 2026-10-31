@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart' show MethodChannel;
 import 'package:path/path.dart' as p;
 
 import 'package:mint/src/enums.dart' show VersionFacts;
@@ -13,6 +12,11 @@ class GameDir {
   /// 共享根目录（versions / libraries / assets 都在这层）。
   final String root;
 
+  /// Android 侧注入的数据目录查询（`mint/fcl dataDir`）。由 Flutter 入口
+  /// （main.dart）注入 —— 放这里是为了让 `dart run` 的 headless 工具
+  /// （e2e 冒烟）不拉进 Flutter 依赖。
+  static Future<String?> Function()? androidDataDirLookup;
+
   /// 启动器数据根目录（不是 .minecraft）。
   static Future<String> launcherDataDir() async {
     if (Platform.isAndroid) {
@@ -22,16 +26,17 @@ class GameDir {
       // 直接 mkdir /Android/data/<pkg> 会被拒绝（errno 13）——
       // 先问原生拿 getExternalFilesDir()。main() 里的 controller.init()
       // 可能早于 MethodChannel 注册，短重试几次再回退。
-      for (var attempt = 0; attempt < 6; attempt++) {
-        try {
-          final dir = await const MethodChannel(
-            'mint/fcl',
-          ).invokeMethod<String>('dataDir');
-          if (dir != null && dir.isNotEmpty) {
-            return p.join(dir, 'MintLauncher');
-          }
-        } catch (_) {}
-        await Future<void>.delayed(const Duration(milliseconds: 150));
+      final lookup = androidDataDirLookup;
+      if (lookup != null) {
+        for (var attempt = 0; attempt < 6; attempt++) {
+          try {
+            final dir = await lookup();
+            if (dir != null && dir.isNotEmpty) {
+              return p.join(dir, 'MintLauncher');
+            }
+          } catch (_) {}
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+        }
       }
       return '/storage/emulated/0/Android/data/dev.mint.mint/files/MintLauncher';
     }

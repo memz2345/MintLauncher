@@ -145,6 +145,7 @@ jobs:
       # 通过标准：日志里出现 LWJGL Version 且无主类异常 —— 和本地
       # `dart run tool/e2e_launch_test.dart` 同一套判定。
       - name: 端到端游戏启动冒烟
+        shell: bash   # -eo pipefail，tee 不吃掉 dart 的退出码
         run: |
           mkdir -p build
           xvfb-run -a -s "-screen 0 1280x800x24 +extension GLX" \
