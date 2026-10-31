@@ -129,7 +129,9 @@ Future<void> main(List<String> rawArgs) async {
     void handleLine(String source, String line) {
       if (line.trim().isEmpty) return;
       stdout.writeln('   | $line');
-      if (line.contains('LWJGL Version')) sawLwjgl = true;
+      // 1.7.10 记「LWJGL Version: 2.9.4」，1.13+ 记「LWJGL version 3.x」
+      // —— 统一按小写比。
+      if (line.toLowerCase().contains('lwjgl version')) sawLwjgl = true;
       if (line.contains('Exception in thread "main"') ||
           line.contains('Unable to') && line.contains('main class')) {
         sawCrash = true;
