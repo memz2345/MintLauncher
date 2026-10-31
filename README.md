@@ -756,8 +756,13 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   --simulator --debug`（模拟器只支持 debug，Flutter 不给 simulator 出
   release；设备版 Release 要开发者账号，后续接）→ 挑可用 iPhone 模拟器
   （按 UDID，跨 Xcode 镜像稳）→ `simctl install/launch`（`--console-pty`
-  抓应用 stdout 做诊断，截图按文件大小轮询等首帧、首启闪退自动重拉）
-  → `simctl io screenshot` 四场景（artifact `ios-screenshots`）。
+  抓应用 stdout 做诊断，截图按文件大小轮询等首帧、**按 pid 存活判定
+  watchdog 杀进程并自动重拉**——首启导入 126MB 主题包必被杀一次，第二拉
+  秒起）→ `simctl io screenshot` 四场景（artifact `ios-screenshots`）。
+  **主题素材**：截图前从 GitHub Release（`test-assets` tag 的 fu.mtz，
+  126MB 不进仓库）下载主题包塞进沙盒 `Documents/import_theme.mtz`，
+  应用启动时标记文件钩子自动导入并删除 —— 主题壁纸 / 主色染色 / 玻璃
+  底栏的效果截图见 artifact。
   **已知限制**：`SIMCTL_CHILD_*` 环境变量在 CI 的 launch 路径下没有到达
   Dart 进程 —— 页面跳转（`MINT_TEST_PAGE`）与强制深色（`MINT_THEME_MODE`）
   两个截图钩子在 iOS 上未生效，四张截的都是首页浅色；应用本体渲染、
