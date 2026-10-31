@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:mint/services/launcher/launch_support.dart';
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/src/enums.dart' show UiStyleX;
@@ -70,6 +71,19 @@ Future<void> launchVersion(
   final version = versionId ?? activeVersionId(controller, settings);
   if (version == null || version.isEmpty) {
     showMintSnack(context, '还没有安装版本，先去「下载」页安装一个吧');
+    return;
+  }
+  // iOS：沙盒禁 fork/exec，JVM 集成（Pojav 路线）未落地前直接给说明。
+  if (!GameLaunchSupport.supported) {
+    final miuix = settings.uiStyle.isMiuix;
+    await showMintConfirmDialog(
+      context,
+      miuix: miuix,
+      title: 'iOS 暂不支持启动游戏',
+      message: GameLaunchSupport.unsupportedReason('ios'),
+      cancelLabel: '',
+      confirmLabel: '知道了',
+    );
     return;
   }
   if (controller.state == LauncherState.running) {

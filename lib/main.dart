@@ -4,11 +4,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:mint/services/download_center.dart';
 import 'package:mint/services/app_locale_bridge.dart';
+import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/services/linux_window_chrome.dart';
 import 'package:mint/services/launcher/account.dart' show createOfflineAccount;
 import 'package:mint/services/launcher/android_data_dir.dart'
@@ -136,6 +139,11 @@ Future<void> main(List<String> args) async {
     });
   }
 
+  // iOS 26 液态玻璃能力探测（缓存给同步取用）。
+  if (Platform.isIOS) {
+    unawaited(IosLiquidGlass.instance.available());
+  }
+
   final settings = SettingsService();
   await settings.load();
   // CI 回归钩子：--dart-define=MINT_TEST_BACKDROP=acrylic|mica|… 启动即
@@ -154,9 +162,31 @@ Future<void> main(List<String> args) async {
   // 老缓存的素材补齐（关于页背景 / 字标 / 音量条图标）要重开一次几十 MB 的包，
   // 放后台跑，别挡首帧。
   unawaited(MintThemeLibrary.instance.upgradeAssets());
+  // CI 环境变量钩子诊断：iOS 模拟器上 SIMCTL_CHILD_* 的转发情况直接打出来。
+  if (Platform.isIOS || Platform.isAndroid) {
+    debugPrint(
+      'mint env hooks: page=${Platform.environment['MINT_TEST_PAGE']} '
+      'theme=${Platform.environment['MINT_TEST_IMPORT_THEME']} '
+      'mode=${Platform.environment['MINT_THEME_MODE']}',
+    );
+  }
   // 冒烟钩子：--dart-define=MINT_TEST_IMPORT_THEME=<mtz 路径> 启动时自动导入
   // 并应用（真机上 adb 进不了内部数据目录，用外部 files 目录喂包）。
-  const testTheme = String.fromEnvironment('MINT_TEST_IMPORT_THEME');
+  // iOS：CI 上 SIMCTL_CHILD_* 转发不稳定，另走文件标记 —— 沙盒
+  // Documents/import_theme.mtz 存在则导入并删除。
+  var testTheme = String.fromEnvironment('MINT_TEST_IMPORT_THEME');
+  if (testTheme.isEmpty) {
+    testTheme = Platform.environment['MINT_TEST_IMPORT_THEME'] ?? '';
+  }
+  if (Platform.isIOS) {
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      final marker = File(p.join(docs.path, 'import_theme.mtz'));
+      if (marker.existsSync()) {
+        testTheme = marker.path;
+      }
+    } catch (_) {}
+  }
   if (testTheme.isNotEmpty && File(testTheme).existsSync()) {
     try {
       final theme = await MintThemeLibrary.instance.import(testTheme);
@@ -167,6 +197,14 @@ Future<void> main(List<String> args) async {
         hasFont: theme.fontFile.isNotEmpty,
         hasBootAnimation: theme.bootAnimationDir.isNotEmpty,
       );
+      // 文件标记模式：导入成功后删掉，重launch 不会重复导入几十 MB。
+      if (Platform.isIOS) {
+        try {
+          final docs = await getApplicationDocumentsDirectory();
+          final marker = File(p.join(docs.path, 'import_theme.mtz'));
+          if (marker.path == testTheme) await marker.delete();
+        } catch (_) {}
+      }
     } catch (e) {
       debugPrint('测试主题导入失败：$e');
     }

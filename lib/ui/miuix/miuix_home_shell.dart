@@ -336,6 +336,8 @@ class _MiuixHomeShellState extends State<MiuixHomeShell>
                     key: ValueKey('home-bar-miuix-$_barEpoch'),
                     blurred: true,
                     blurSigma: 12,
+                    // iOS 26+:底栏交给系统液态玻璃(GlassBridge)。
+                    systemGlass: Platform.isIOS && settings.iosLiquidGlass,
                     selectedIndex: _index,
                     onSelected: _onNavigate,
                     items: [

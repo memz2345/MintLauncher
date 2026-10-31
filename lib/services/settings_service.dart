@@ -220,6 +220,11 @@ class SettingsService extends ChangeNotifier {
     _progressiveTopBar =
         prefs.getBool('${_prefKeyPrefix}progressiveTopBar') ??
         _progressiveTopBar;
+    _iosLiquidGlass =
+        prefs.getBool('${_prefKeyPrefix}iosLiquidGlass') ?? _iosLiquidGlass;
+    _iosGlassBackBackground =
+        prefs.getBool('${_prefKeyPrefix}iosGlassBackBackground') ??
+        _iosGlassBackBackground;
     // 截图/回归钩子：--dart-define=MINT_WINDOW_EFFECT=mica|acrylic|...
     // （CI 冒烟同样接受同名环境变量）。
     final effectOverride = envHook(
@@ -354,6 +359,32 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
     final prefs = await _prefsFuture!;
     await prefs.setBool('${_prefKeyPrefix}progressiveTopBar', value);
+  }
+
+  // ─────────────── iOS 26 系统液态玻璃（底栏 / 返回键） ───────────────
+
+  /// 悬浮底栏用系统 Liquid Glass（UIGlassEffect）替代 Flutter 自绘毛玻璃。
+  /// 仅 iOS 26+ 生效（能力探测不过时组件自动走自绘降级），默认开。
+  bool _iosLiquidGlass = true;
+  bool get iosLiquidGlass => _iosLiquidGlass;
+  Future<void> setIosLiquidGlass(bool value) async {
+    if (_iosLiquidGlass == value) return;
+    _iosLiquidGlass = value;
+    notifyListeners();
+    final prefs = await _prefsFuture!;
+    await prefs.setBool('${_prefKeyPrefix}iosLiquidGlass', value);
+  }
+
+  /// 返回键的玻璃底是否铺（**可选**：关掉就是裸返回箭头，和系统小布局
+  /// 一致）。仅在 [iosLiquidGlass] 开启时有意义。
+  bool _iosGlassBackBackground = true;
+  bool get iosGlassBackBackground => _iosGlassBackBackground;
+  Future<void> setIosGlassBackBackground(bool value) async {
+    if (_iosGlassBackBackground == value) return;
+    _iosGlassBackBackground = value;
+    notifyListeners();
+    final prefs = await _prefsFuture!;
+    await prefs.setBool('${_prefKeyPrefix}iosGlassBackBackground', value);
   }
 
   // ───────────────────── 窗口背景（Windows 10+） ─────────────────────

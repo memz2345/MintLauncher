@@ -162,6 +162,16 @@ jobs:
           mkdir -p build/shots
           xcrun simctl install "$UDID" "$APP"
 
+          # fu.mtz（MIUI 主题测试素材，126MB 不进仓库）→ 沙盒
+          # Documents/import_theme.mtz：应用启动时自动导入并删除（见
+          # main.dart 的 iOS 标记文件钩子）。导入 126MB 包要几十秒，
+          # 截图轮询自然覆盖。
+          DATA=$(xcrun simctl get_app_container "$UDID" dev.mint.mint data)
+          mkdir -p "$DATA/Documents"
+          curl -sL --retry 3 -o "$DATA/Documents/import_theme.mtz" \
+            "https://github.com/memz2345/MintLauncher/releases/download/test-assets/fu.mtz"
+          ls -la "$DATA/Documents/import_theme.mtz"
+
           shot() {
             local name="$1"; shift
             local env_args=()

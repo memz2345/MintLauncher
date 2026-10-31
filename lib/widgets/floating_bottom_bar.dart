@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'package:mint/services/ios_liquid_glass.dart';
+
 /// 悬浮底栏 —— InstallerX `FloatingBottomBar`（非玻璃 None 档）的 Flutter 移植，
 /// 与 G:\192\local2api 的 `widgets/floating_bottom_bar.dart` 同源。
 ///
@@ -60,6 +62,7 @@ class FloatingBottomBar extends StatefulWidget {
     this.height = 64,
     this.blurred = false,
     this.blurSigma = 10.8,
+    this.systemGlass = false,
   });
 
   final List<FloatingBottomBarItem> items;
@@ -74,6 +77,12 @@ class FloatingBottomBar extends StatefulWidget {
 
   /// 模糊 sigma。miuix 顶栏同款换算：radius 24 × 0.45 ≈ 10.8。
   final double blurSigma;
+
+  /// iOS 26 系统液态玻璃：调用方给 `Platform.isIOS && settings.iosLiquidGlass`，
+  /// 探测确认（UIGlassEffect 存在）后胶囊不再自绘底色 / 毛玻璃 / 阴影，
+  /// 区域上报给原生铺 `UIGlassEffect` —— 与系统 tab 栏同款观感。探测失败
+  /// 自动退回自绘。
+  final bool systemGlass;
 
   @override
   State<FloatingBottomBar> createState() => _FloatingBottomBarState();
@@ -93,9 +102,22 @@ class _FloatingBottomBarState extends State<FloatingBottomBar>
   /// 拖动中（指示器跟手、不吸附）。
   bool _dragging = false;
 
+  /// 系统玻璃探测结果（仅 [FloatingBottomBar.systemGlass] 为真时探测）。
+  bool _glassActive = false;
+
   double _tabWidth = 0;
   int get _count => widget.items.length;
   int get _index => widget.selectedIndex.clamp(0, math.max(0, _count - 1));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.systemGlass) {
+      IosLiquidGlass.instance.available().then((ok) {
+        if (mounted) setState(() => _glassActive = ok);
+      });
+    }
+  }
 
   @override
   void didUpdateWidget(FloatingBottomBar oldWidget) {
@@ -166,28 +188,36 @@ class _FloatingBottomBarState extends State<FloatingBottomBar>
           contentColor: Theme.of(context).colorScheme.onSurfaceVariant,
           activeContentColor: Theme.of(context).colorScheme.primary,
         );
+    // 系统玻璃：胶囊本身完全透明（底色 / 阴影 / 毛玻璃都交给原生
+    // UIGlassEffect），只画指示器与内容。
+    final glass = widget.systemGlass && _glassActive;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Material(
-        color: colors.containerColor,
-        // Stadium = 圆角 999 的胶囊（对应 Compose CircleShape pill）。
-        shape: const StadiumBorder(),
-        elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.25),
-        // 毛玻璃：裁剪到胶囊范围内做实时背景模糊 —— Material 的半透明底色
-        // 在 filter 之前铺一层色调，模糊取到的就是「色调后的背景」，净效果
-        // 等价 miuix 顶栏的 blur + tint。
-        clipBehavior: widget.blurred ? Clip.antiAlias : Clip.none,
-        child: !widget.blurred
-            ? _content(colors)
-            : BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: widget.blurSigma,
-                  sigmaY: widget.blurSigma,
-                ),
-                child: _content(colors),
-              ),
+      child: GlassRegion(
+        id: 'bottomBar',
+        radius: widget.height / 2,
+        enabled: glass,
+        child: Material(
+          color: glass ? Colors.transparent : colors.containerColor,
+          // Stadium = 圆角 999 的胶囊（对应 Compose CircleShape pill）。
+          shape: const StadiumBorder(),
+          elevation: glass ? 0 : 6,
+          shadowColor: Colors.black.withValues(alpha: 0.25),
+          // 毛玻璃：裁剪到胶囊范围内做实时背景模糊 —— Material 的半透明底色
+          // 在 filter 之前铺一层色调，模糊取到的就是「色调后的背景」，净效果
+          // 等价 miuix 顶栏的 blur + tint。
+          clipBehavior: !glass && widget.blurred ? Clip.antiAlias : Clip.none,
+          child: !glass && widget.blurred
+              ? BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: widget.blurSigma,
+                    sigmaY: widget.blurSigma,
+                  ),
+                  child: _content(colors),
+                )
+              : _content(colors),
+        ),
       ),
     );
   }

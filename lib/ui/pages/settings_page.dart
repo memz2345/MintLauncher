@@ -728,8 +728,30 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: '顶栏透明化，内容滚入时顶部渐进模糊淡入（AppMarket 同款）',
                 value: settings.progressiveTopBar,
                 onChanged: (v) => settings.setProgressiveTopBar(v),
-                showDivider: settings.cloudForeground,
+                showDivider: settings.cloudForeground || Platform.isIOS,
               ),
+              if (Platform.isIOS) ...[
+                SwitchRow(
+                  miuix: miuix,
+                  icon: Icons.blur_circular_outlined,
+                  title: '液态玻璃底栏',
+                  subtitle: 'iOS 26 系统自带 Liquid Glass 铺底栏（UIGlassEffect），'
+                      '旧系统自动回到毛玻璃胶囊',
+                  value: settings.iosLiquidGlass,
+                  onChanged: (v) => settings.setIosLiquidGlass(v),
+                ),
+                SwitchRow(
+                  miuix: miuix,
+                  icon: Icons.arrow_back_outlined,
+                  title: '返回键玻璃底',
+                  subtitle: '可选：返回箭头后面铺一块系统玻璃圆底，关掉是裸箭头',
+                  value: settings.iosGlassBackBackground,
+                  // 主开关关了这里就没意义：置灰。
+                  onChanged: settings.iosLiquidGlass
+                      ? (v) => settings.setIosGlassBackBackground(v)
+                      : null,
+                ),
+              ],
               SwitchRow(
                 miuix: miuix,
                 icon: Icons.cloud_outlined,

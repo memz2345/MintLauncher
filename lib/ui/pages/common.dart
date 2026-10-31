@@ -1127,6 +1127,30 @@ List<Widget> mintDialogActions(
   String confirmLabel = '确定',
   bool destructive = false,
 }) {
+  // cancelLabel 传空 = 单按钮通知弹窗（不渲染取消键）。
+  if (cancelLabel.isEmpty) {
+    return switch (_mintDialogStyle(context, miuix)) {
+      _MintDialogStyle.fluent => [
+        fluent.FilledButton(
+          onPressed: onConfirm,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(confirmLabel),
+          ),
+        ),
+      ],
+      _MintDialogStyle.miuix => [
+        MiuixButton(
+          onPressed: onConfirm,
+          colors: MiuixButtonDefaults.buttonColorsPrimary(context),
+          child: Text(confirmLabel),
+        ),
+      ],
+      _MintDialogStyle.material => [
+        FilledButton(onPressed: onConfirm, child: Text(confirmLabel)),
+      ],
+    };
+  }
   switch (_mintDialogStyle(context, miuix)) {
     case _MintDialogStyle.fluent:
       return [

@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 
+import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/ui/pages/common.dart' show MintSnackScope;
 import 'package:mint/services/window_backdrop.dart';
@@ -177,7 +179,9 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
   Widget? _resolvedLeading(BuildContext context) {
     if (widget.leading != null) return widget.leading;
     if (!widget.showBack) return null;
-    return MintTopBarAction(
+    // iOS 26 液态玻璃:返回键的玻璃底**可选**(设置里关掉就是裸箭头)。
+    // 区域由 GlassRegion 实测上报;探测结果在启动时缓存。
+    Widget back = MintTopBarAction(
       miuix: mintMiuixOf(context),
       tooltip: '返回',
       // 三套风格各自的返回箭头（fluent：chrome_back / miuix：矢量 back /
@@ -185,6 +189,32 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
       child: const MintBackIcon(size: 22),
       onPressed: () => Navigator.of(context).maybePop(),
     );
+    if (Platform.isIOS) {
+      final glass = _iosGlassBack(context);
+      if (glass) {
+        back = GlassRegion(
+          id: 'back',
+          radius: 21,
+          enabled: true,
+          child: back,
+        );
+      }
+    }
+    return back;
+  }
+
+  /// 返回键玻璃底开关（iOS 26 且主开关开着才生效）。极简测试环境没有
+  /// [SettingsService] 时按默认值（开）走。
+  bool _iosGlassBack(BuildContext context) {
+    try {
+      final settings = context.read<SettingsService>();
+      if (!settings.iosLiquidGlass || !settings.iosGlassBackBackground) {
+        return false;
+      }
+      return IosLiquidGlass.instance.cachedAvailable == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

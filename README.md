@@ -763,6 +763,28 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   两个截图钩子在 iOS 上未生效，四张截的都是首页浅色；应用本体渲染、
   数据目录（沙盒 Documents）均正常。待查 simctl 环境转发或改用
   Dart VM service 注入。
+- **iOS 26 系统液态玻璃（2026-10-31 起）**：悬浮底栏 / 返回键接**系统自带**
+  Liquid Glass（`ios/Runner/GlassBridge.swift`，通道 `mint/ios_glass`）：
+  - 原生在 Flutter 视图之上铺 `UIGlassEffect` + `UIVisualEffectView`
+    （糊的是身后的 Flutter 内容，与系统 tab 栏同款）；玻璃视图不接收
+    触摸，点击全穿透回 Flutter；
+  - `UIGlassEffect` 用 **`NSClassFromString` 反射构造**：CI 的 Xcode 可能
+    还没带 iOS 26 SDK，反射在旧 SDK 上也能编译；运行时没有该类（iOS < 26）
+    能力探测返回 false，Flutter 自动回到自绘毛玻璃胶囊；
+  - Dart 侧区域上报 = `GlassRegion` 组件（每帧实测全局矩形，参数没变不
+    重发通道消息；dispose 自动摘除）。底栏玻璃模式下不再自绘底色 / 阴影 /
+    BackdropFilter，只画指示器与内容；
+  - **返回键的玻璃底是可选的**（设置 → 外观 →「返回键玻璃底」，默认开；
+    关掉就是裸返回箭头）。主开关「液态玻璃底栏」同在（仅 iOS 显示）。
+- **iOS 启动游戏 = 明确降级**：`GameLaunchSupport`（lib/services/launcher/
+  launch_support.dart）统一平台能力表 —— iOS 沙盒禁 fork/exec，未接
+  OpenJDK（Pojav 路线）前启动入口直接弹三风格说明框（OpenJDK 同进程
+  `JNI_CreateJavaVM` + JIT 特权 + MetalANGLE 渲染的完整路线见上文），
+  不让用户去撞 `Process.start` 的沙盒报错；单测
+  `test/launch_support_test.dart`。
+- **iOS 游戏画面的弹窗 = 原生 UIKit**（规划）：Android 游戏屏的加载层 /
+  游戏内菜单是 Compose（`GameLoadingOverlay` / `GlassPanel`），iOS 不移植
+  Compose —— 等游戏启动落地时用 SwiftUI/UIKit 原生浮层实现同套交互。
 
 ## 启动器核心（lib/services/launcher/）
 
