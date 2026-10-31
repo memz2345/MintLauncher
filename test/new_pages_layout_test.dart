@@ -292,9 +292,16 @@ void main() {
     // 带选项的弹窗已改成独立页面（共用母页）。
     await tester.tap(find.text('窗口背景材质'));
     await tester.pumpAndSettle();
-    expect(find.text('云母 Mica'), findsOneWidget);
-    expect(find.text('亚克力 Acrylic'), findsOneWidget);
-    expect(find.text('Aero 毛玻璃'), findsOneWidget);
+    if (Platform.isLinux) {
+      // Linux 只有系统模糊一种实现，选项收敛成 关闭 / 窗口模糊（系统）。
+      expect(find.text('关闭'), findsOneWidget);
+      expect(find.text('窗口模糊（系统）'), findsOneWidget);
+      expect(find.text('云母 Mica'), findsNothing);
+    } else {
+      expect(find.text('云母 Mica'), findsOneWidget);
+      expect(find.text('亚克力 Acrylic'), findsOneWidget);
+      expect(find.text('Aero 毛玻璃'), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 }
