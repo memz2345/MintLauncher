@@ -34,7 +34,8 @@ jobs:
         run: flutter pub get
 
       - name: 静态分析
-        run: flutter analyze
+        # info 不挡 CI（不同 Flutter 版本 lint 集合在漂移），warning/error 仍然致命。
+        run: flutter analyze --no-fatal-infos
 
       - name: 单元测试
         run: flutter test
