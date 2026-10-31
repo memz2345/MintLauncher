@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/gestures.dart';
@@ -63,17 +64,23 @@ class LogWindowApp extends StatelessWidget {
           style: Theme.of(
             context,
           ).textTheme.bodyMedium!.copyWith(decoration: TextDecoration.none),
-          child: MintWindowResizeFrame(
-            child: MintCaptionMenuHost(
-              child: Column(
-                children: [
-                  // 自绘窗口标题栏（系统 caption 已由 runner 去掉）。
-                  const MintCaptionBar(title: '运行日志'),
-                  Expanded(child: EdgeScrollHaptic(child: child!)),
-                ],
-              ),
-            ),
-          ),
+          // 自绘标题栏 / 缩放热区只在 Windows 生效：Linux 的日志子窗口
+          // 保留 GTK 原生装饰（chrome 通道只注册在主窗口引擎上）。
+          child: Platform.isWindows
+              ? MintWindowResizeFrame(
+                  child: MintCaptionMenuHost(
+                    child: Column(
+                      children: [
+                        // 自绘窗口标题栏（系统 caption 已由 runner 去掉）。
+                        const MintCaptionBar(title: '运行日志'),
+                        Expanded(child: EdgeScrollHaptic(child: child!)),
+                      ],
+                    ),
+                  ),
+                )
+              : MintCaptionMenuHost(
+                  child: EdgeScrollHaptic(child: child!),
+                ),
         ),
         theme: ThemeData(
           useMaterial3: true,

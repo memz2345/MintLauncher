@@ -88,7 +88,8 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
     WindowBackdrop.instance.addListener(_onBackdropChanged);
     widget.controller.addListener(_onControllerChanged);
     // 只有真正画了自绘标题栏时才让二级页把标题/back/操作托管上来。
-    MintWindowChrome.instance.enabled = Platform.isWindows;
+    // Linux 也启用：GTK 原生装饰在 main 里提前摘掉（LinuxWindowChrome）。
+    MintWindowChrome.instance.enabled = Platform.isWindows || Platform.isLinux;
     // 回归钩子：自动套用第一个已导入的 MIUI 主题（截图 / 冒烟用）。
     const testApplyTheme = bool.fromEnvironment('MINT_TEST_APPLY_THEME');
     if (testApplyTheme) {
@@ -103,7 +104,12 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
         );
       }
     }
-    const testPage = String.fromEnvironment('MINT_TEST_PAGE');
+    // 截图/回归钩子：优先 dart-define，CI 冒烟再用同名环境变量
+    // （一个二进制反复拉起就能截不同页面，不用重编）。
+    final testPage =
+        const String.fromEnvironment('MINT_TEST_PAGE').isNotEmpty
+        ? const String.fromEnvironment('MINT_TEST_PAGE')
+        : (Platform.environment['MINT_TEST_PAGE'] ?? '');
     if (testPage.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _openTestPage(testPage),

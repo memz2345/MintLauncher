@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -11,6 +12,13 @@ import 'package:mint/services/native_toast_service.dart';
 import 'package:mint/services/vtouch/vtouch_layout.dart'
     show VTouchControl, migrateVTouchLabels, vtouchDefaults;
 import 'launcher/account.dart' show OfflineAccount;
+
+/// 截图/回归钩子的取值：dart-define 优先，同名环境变量兜底（CI 冒烟
+/// 用同一个二进制反复拉起截不同场景，不用重编）。
+String envHook(String defined, String envName) {
+  if (defined.isNotEmpty) return defined;
+  return Platform.environment[envName] ?? '';
+}
 
 /// 单个版本的启动设置覆盖（HMCL 的「版本特定设置」同思路）：
 /// 字段为 null = 跟随全局设置。
@@ -170,8 +178,12 @@ class SettingsService extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await _prefsFuture!;
     _uiStyle = UiStyleX.fromId(prefs.getString('${_prefKeyPrefix}uiStyle'));
-    // 截图/回归钩子：不改持久化值，只影响本次运行。
-    const uiOverride = String.fromEnvironment('MINT_UI_STYLE');
+    // 截图/回归钩子：不改持久化值，只影响本次运行。dart-define 优先，
+    // CI 冒烟可用同名环境变量（一个二进制截三种界面风格）。
+    final uiOverride = envHook(
+      const String.fromEnvironment('MINT_UI_STYLE'),
+      'MINT_UI_STYLE',
+    );
     if (uiOverride == 'miuix') _uiStyle = UiStyle.miuix;
     if (uiOverride == 'material') _uiStyle = UiStyle.materialExpressive;
     if (uiOverride == 'fluent') _uiStyle = UiStyle.fluent;
@@ -181,7 +193,10 @@ class SettingsService extends ChangeNotifier {
         )] ??
         ThemeMode.system;
     // 截图/回归钩子：不改持久化值，只影响本次运行。
-    const themeOverride = String.fromEnvironment('MINT_THEME_MODE');
+    final themeOverride = envHook(
+      const String.fromEnvironment('MINT_THEME_MODE'),
+      'MINT_THEME_MODE',
+    );
     if (themeOverride == 'light') _themeMode = ThemeMode.light;
     if (themeOverride == 'dark') _themeMode = ThemeMode.dark;
     _useDynamicColor =
@@ -206,7 +221,11 @@ class SettingsService extends ChangeNotifier {
         prefs.getBool('${_prefKeyPrefix}progressiveTopBar') ??
         _progressiveTopBar;
     // 截图/回归钩子：--dart-define=MINT_WINDOW_EFFECT=mica|acrylic|...
-    const effectOverride = String.fromEnvironment('MINT_WINDOW_EFFECT');
+    // （CI 冒烟同样接受同名环境变量）。
+    final effectOverride = envHook(
+      const String.fromEnvironment('MINT_WINDOW_EFFECT'),
+      'MINT_WINDOW_EFFECT',
+    );
     if (effectOverride.isNotEmpty) {
       _windowEffect = WindowBackdropMode.fromId(effectOverride);
     }

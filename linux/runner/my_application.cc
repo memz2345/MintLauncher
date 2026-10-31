@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "window_chrome.h"
 #include "window_effects.h"
 
 struct _MyApplication {
@@ -82,6 +83,8 @@ static void my_application_activate(GApplication* application) {
 
   // mint/backdrop 方法通道（能力探测 / 应用模糊）。
   mint_backdrop_register(view);
+  // mint/window_chrome 方法通道（自绘标题栏：无边框 + 系统三大金刚图标）。
+  mint_window_chrome_register(view);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

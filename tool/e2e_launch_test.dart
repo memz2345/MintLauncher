@@ -28,7 +28,13 @@ Future<void> main(List<String> rawArgs) async {
   final gameDir = GameDir(root);
   stdout.writeln('== 游戏目录: $root');
 
-  final dl = Downloader(mirror: Mirror.auto);
+  // CI（GitHub 海外机器）用 MINT_E2E_MIRROR=official 直连官方源更快；
+  // 本地默认 auto（BMCLAPI 优先，失败回官方）。
+  final mirror =
+      Platform.environment['MINT_E2E_MIRROR'] == 'official'
+      ? Mirror.official
+      : Mirror.auto;
+  final dl = Downloader(mirror: mirror);
   try {
     // ── 清单 ──
     stdout.writeln('== 拉取版本清单…');

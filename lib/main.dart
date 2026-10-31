@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:mint/services/download_center.dart';
 import 'package:mint/services/app_locale_bridge.dart';
+import 'package:mint/services/linux_window_chrome.dart';
 import 'package:mint/services/launcher/account.dart' show createOfflineAccount;
 import 'package:mint/services/launcher/game_dir.dart' as game_dir;
 import 'package:mint/services/launcher/launcher_controller.dart';
@@ -100,6 +101,11 @@ Future<void> main(List<String> args) async {
   // 桌面端：窗口尺寸 + 标题
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
+    if (Platform.isLinux) {
+      // Linux 自绘标题栏：趁窗口还没 show 摘掉 GTK 原生装饰（不会闪）。
+      // 三大金刚图标由 runner 从 GTK 图标主题取系统图标（LinuxWindowChrome）。
+      await LinuxWindowChrome.instance.ensureCustomFrame();
+    }
     const options = WindowOptions(
       title: 'Mint Launcher',
       size: Size(1180, 760),
@@ -120,7 +126,11 @@ Future<void> main(List<String> args) async {
   await settings.load();
   // CI 回归钩子：--dart-define=MINT_TEST_BACKDROP=acrylic|mica|… 启动即
   // 应用对应窗口材质（Linux CI 在 KWin 下用 xprop 验证模糊原子真的设置上了）。
-  const testBackdrop = String.fromEnvironment('MINT_TEST_BACKDROP');
+  // 环境变量同名回退，冒烟脚本不用重编。
+  final testBackdrop =
+      const String.fromEnvironment('MINT_TEST_BACKDROP').isNotEmpty
+      ? const String.fromEnvironment('MINT_TEST_BACKDROP')
+      : (Platform.environment['MINT_TEST_BACKDROP'] ?? '');
   if (testBackdrop.isNotEmpty) {
     await settings.setWindowEffect(WindowBackdropMode.fromId(testBackdrop));
   }

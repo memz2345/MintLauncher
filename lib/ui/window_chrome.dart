@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:mint/services/download_center.dart';
+import 'package:mint/services/linux_window_chrome.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/src/enums.dart';
 import 'package:mint/services/window_backdrop.dart';
@@ -798,6 +799,15 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
 Widget _captionGlyph({required int glyph, required IconData fallbackIcon}) =>
     _CaptionGlyph(glyph: glyph, fallbackIcon: fallbackIcon);
 
+/// Segoe Fluent 字形 → 系统图标主题的键名（Linux）。
+String? _captionIconName(int glyph) => switch (glyph) {
+  0xE921 => 'minimize',
+  0xE922 => 'maximize',
+  0xE923 => 'restore',
+  0xE8BB => 'close',
+  _ => null,
+};
+
 class _CaptionGlyph extends StatelessWidget {
   const _CaptionGlyph({required this.glyph, required this.fallbackIcon});
 
@@ -810,6 +820,16 @@ class _CaptionGlyph extends StatelessWidget {
         DefaultTextStyle.of(context).style.color ??
         Theme.of(context).colorScheme.onSurface;
     if (!Platform.isWindows) {
+      // Linux：三大金刚用系统图标主题的 window-*-symbolic（按前景色
+      // 着色，跟 Windows 用 Segoe 系统字形同思路）；没取到就矢量回退。
+      final name = Platform.isLinux ? _captionIconName(glyph) : null;
+      if (name != null) {
+        return _LinuxSystemGlyph(
+          name: name,
+          fallbackIcon: fallbackIcon,
+          color: color,
+        );
+      }
       return Icon(fallbackIcon, size: 16, color: color);
     }
     return Text(
@@ -822,6 +842,43 @@ class _CaptionGlyph extends StatelessWidget {
         color: color,
         decoration: TextDecoration.none,
       ),
+    );
+  }
+}
+
+/// 从 GTK 图标主题渲染的金刚图标（PNG 字节，随系统主题换皮）。
+class _LinuxSystemGlyph extends StatelessWidget {
+  const _LinuxSystemGlyph({
+    required this.name,
+    required this.fallbackIcon,
+    required this.color,
+  });
+
+  final String name;
+  final IconData fallbackIcon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final argb = color.toARGB32();
+    // 异步请求（悬停变白时也是同一个入口，首次一帧后换上图）；没取到
+    // 之前先画 Material 矢量兜底。
+    LinuxWindowChrome.instance.ensureIcons(argb);
+    return AnimatedBuilder(
+      animation: LinuxWindowChrome.instance,
+      builder: (context, _) {
+        final bytes = LinuxWindowChrome.instance.icon(argb, name);
+        if (bytes == null) {
+          return Icon(fallbackIcon, size: 16, color: color);
+        }
+        return Image.memory(
+          bytes,
+          width: 16,
+          height: 16,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
+        );
+      },
     );
   }
 }

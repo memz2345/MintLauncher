@@ -29,7 +29,7 @@ jobs:
             clang cmake ninja-build pkg-config \
             libgtk-3-dev libwayland-dev \
             xvfb imagemagick x11-utils xdotool weston dbus-x11 \
-            fonts-noto-cjk
+            fonts-noto-cjk adwaita-icon-theme
 
       - name: 拉取 Dart 依赖
         run: flutter pub get
@@ -51,6 +51,9 @@ jobs:
 
       - name: X11 冒烟（Xvfb）
         run: bash tool/ci/smoke_x11.sh build/linux/x64/release/bundle/mint build/smoke/x11
+
+      - name: 多场景截图巡游（页面 / 风格 / 明暗）
+        run: bash tool/ci/screenshot_tour.sh build/linux/x64/release/bundle/mint build/smoke/tour
 
       - name: Wayland 冒烟（weston headless）
         run: bash tool/ci/smoke_wayland.sh build/linux/x64/release/bundle/mint build/smoke/wayland
@@ -115,3 +118,45 @@ jobs:
 
       - name: 编译 Debug APK
         run: flutter build apk --debug
+
+  linux-game:
+    name: Linux 游戏启动实测（Xvfb + llvmpipe）
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 安装依赖（Xvfb 供 GLFW 建窗口，llvmpipe 即纯 CPU 渲染路径）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb x11-utils libgl1-mesa-dri mesa-utils fonts-noto-cjk
+
+      - name: 拉取 Dart 依赖
+        run: flutter pub get
+
+      # e2e：清单 → 安装 1.20.4（库/资源/natives）→ 缺 Java 自动下载
+      # Mojang Linux 运行时 → 起游戏进程 → 观察 90 秒。
+      # 通过标准：日志里出现 LWJGL Version 且无主类异常 —— 和本地
+      # `dart run tool/e2e_launch_test.dart` 同一套判定。
+      - name: 端到端游戏启动冒烟
+        run: |
+          mkdir -p build
+          xvfb-run -a -s "-screen 0 1280x800x24 +extension GLX" \
+            env LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+            MINT_E2E_MIRROR=official \
+            dart run tool/e2e_launch_test.dart 1.20.4 2>&1 | tee build/e2e_launch.log
+
+      - name: 上传 e2e 日志
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-game-e2e
+          path: |
+            build/e2e_launch.log
+          if-no-files-found: warn
