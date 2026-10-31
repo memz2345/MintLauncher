@@ -28,7 +28,7 @@ target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 # X11 侧只需要 Xlib（GTK3 已带），任何环境都能编；缺 wayland-scanner /
 # libwayland-client 的环境自动降级为纯 X11 实现。
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(WAYLAND_CLIENT wayland-client)
+pkg_check_modules(WAYLAND_CLIENT IMPORTED_TARGET wayland-client)
 find_program(WAYLAND_SCANNER wayland-scanner)
 if(WAYLAND_CLIENT_FOUND AND WAYLAND_SCANNER)
   set(MINT_PROTOCOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/protocols")
