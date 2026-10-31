@@ -753,10 +753,16 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   - **许可**：PojavLauncher 组件为 GPL-3.0（与本项目一致），MetalANGLE
     自定义许可（ANGLE 系）—— 引用时按上游 NOTICE 标注。
 - **CI**：`.github/workflows/ci.yml` 的 `ios` job —— `flutter build ios
-  --simulator --debug`（模拟器构建免签名；设备版 Release 要开发者账号，
-  后续接）→ 挑可用 iPhone 模拟器（按 UDID，跨 Xcode 镜像稳）→
-  `simctl install/launch`（页面钩子经 `SIMCTL_CHILD_*` 环境变量传入，
-  与桌面的环境变量钩子同一套）→ `simctl io screenshot` 四场景。
+  --simulator --debug`（模拟器只支持 debug，Flutter 不给 simulator 出
+  release；设备版 Release 要开发者账号，后续接）→ 挑可用 iPhone 模拟器
+  （按 UDID，跨 Xcode 镜像稳）→ `simctl install/launch`（`--console-pty`
+  抓应用 stdout 做诊断，截图按文件大小轮询等首帧、首启闪退自动重拉）
+  → `simctl io screenshot` 四场景（artifact `ios-screenshots`）。
+  **已知限制**：`SIMCTL_CHILD_*` 环境变量在 CI 的 launch 路径下没有到达
+  Dart 进程 —— 页面跳转（`MINT_TEST_PAGE`）与强制深色（`MINT_THEME_MODE`）
+  两个截图钩子在 iOS 上未生效，四张截的都是首页浅色；应用本体渲染、
+  数据目录（沙盒 Documents）均正常。待查 simctl 环境转发或改用
+  Dart VM service 注入。
 
 ## 启动器核心（lib/services/launcher/）
 
