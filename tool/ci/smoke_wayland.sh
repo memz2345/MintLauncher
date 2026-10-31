@@ -8,7 +8,9 @@ set -uo pipefail
 
 BIN="${1:?用法: smoke_wayland.sh <bundle> <outdir>}"
 OUT="${2:?用法: smoke_wayland.sh <bundle> <outdir>}"
+# libwayland 要求 XDG_RUNTIME_DIR 是绝对路径，先把 OUT 归一化。
 mkdir -p "$OUT"
+OUT="$(realpath "$OUT")"
 
 export XDG_RUNTIME_DIR="$OUT/xdg"
 mkdir -p "$XDG_RUNTIME_DIR"

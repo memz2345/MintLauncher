@@ -12,7 +12,9 @@ set -uo pipefail
 
 BIN="${1:?用法: kwin_blur_probe.sh <bundle> <outdir>}"
 OUT="${2:?用法: kwin_blur_probe.sh <bundle> <outdir>}"
+# libwayland/dbus 要求 XDG_RUNTIME_DIR 是绝对路径，先把 OUT 归一化。
 mkdir -p "$OUT"
+OUT="$(realpath "$OUT")"
 
 export DISPLAY="${PROBE_DISPLAY:-:98}"
 if ! xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then

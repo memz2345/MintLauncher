@@ -10,6 +10,7 @@ set -uo pipefail
 BIN="${1:?用法: smoke_x11.sh <bundle> <outdir>}"
 OUT="${2:?用法: smoke_x11.sh <bundle> <outdir>}"
 mkdir -p "$OUT"
+OUT="$(realpath "$OUT")"
 
 export DISPLAY="${SMOKE_DISPLAY:-:99}"
 if ! xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
