@@ -33,6 +33,7 @@
 |---|---|---|
 | Windows | ✅ 可用 | 普通 Java 进程（参考 HMCL） |
 | macOS / Linux | 🧪 CI 持续验证 | 同 Windows 逻辑；GitHub Actions 已实测：构建 / Xvfb / weston headless / KWin 模糊探针 / **游戏 e2e（1.20.4 安装 → 启动 → LWJGL 3.3.2 初始化 → 纯 CPU 渲染存活 90s）** |
+| iOS | 🧪 启动器 UI 已跑 | CI（macOS runner）构建 + iPhone 模拟器实跑截图；游戏启动对齐 PojavLauncher_iOS（OpenJDK 同进程 + MetalANGLE/gl4ES + JIT 特权），见「iOS」章节 |
 | Android | 🧪 实验 | FCL 运行时（JRE8/JRE17 + LWJGL3/lwjglx + GL4ES），x86_64 模拟器与 arm64 真机均已跑通 1.7.10，targetSdk 37 |
 
 ## 界面（布局参考 FCL，标题栏移植自 local2api）
@@ -719,6 +720,43 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   26.x 快照一类声明 LWJGL ≥3.4.1 的版本，运行时目录已支持归一到 3.4.1，
   但 3.4.1 那套 jar/natives 还没打进 APK；armeabi-v7a 未打包。
 - **冒烟钩子**：`--dart-define=MINT_TEST_ANDROID_LAUNCH=1.7.10` 启动后台自动拉起。
+
+## iOS（2026-10-31 起：启动器 UI 已在模拟器实跑，游戏启动未做）
+
+- **本轮范围**：Flutter iOS 平台接入 + CI（macOS runner）构建 + iPhone 模拟器
+  实跑截图（首页 / 设置 / 下载管理 / 深色四场景，artifact `ios-screenshots`）。
+  下载中心、Modrinth 浏览、账户、版本管理、MIUI 主题包、三套界面风格这些
+  **纯 Flutter 能力** iOS 直接可用（数据目录落在应用沙盒 `~/.mint_launcher`）；
+  桌面窗口链路（windowManager / 窗口材质 / 自绘标题栏 / 虚拟触控 / 独立日志
+  窗口）在 iOS 全部不启用，平台守卫天然覆盖，未改业务代码。
+- **游戏启动未做，落地方案对齐 PojavLauncher_iOS**（GPL-3.0，
+  <https://github.com/PojavLauncherTeam/PojavLauncher_iOS>）—— 同类实现里
+  最成熟的参考：
+  - **运行时**：移植版 OpenJDK（HotSpot）打进应用 / 按需下载（Pojav 的
+    JRE 管理页同款思路）。iOS 上 JVM 必须**同进程** `dlopen(libjvm.dylib)`
+    + `JNI_CreateJavaVM` 启动，不能像桌面那样 `Process.start(java)` ——
+    Mint 的 `launch_builder` 参数展开器平台无关可复用，但输出要从「命令行」
+    换成「JVM 选项数组」；
+  - **JIT**：iOS 默认禁可写可执行内存。Pojav 的路线：AltStore/SideStore
+    的 AltJIT（`Natives/resources/Frameworks/AltKit.framework`）、TrollStore
+    特权 entitlement、开发者 JIT 特权或越狱；无 JIT 时解释执行（慢一个
+    数量级）。其 `entitlements.sideload.xml` 还要
+    `com.apple.developer.kernel.extended-virtual-addressing` /
+    `increased-memory-limit` / `com.apple.private.memorystatus` 才喂得饱
+    现代版本的 JVM；
+  - **渲染**：MetalANGLE（kakashidinho 的 ANGLE fork，GLES → Metal）+
+    gl4ES（老版本兼容）/ MoltenVK（Vulkan 路径），另有 **libOSMesa** 软件
+    OpenGL —— 对应 Mint 的「CPU 软件渲染」后端选项；FCL 在 Android 的
+    GL4ES 渲染器选择逻辑可以平移；
+  - **分发**：AltStore / SideStore / TrollStore 侧载（免开发者账号），
+    欧盟区第三方商店上架（PojavLauncher 已上 App Store）；
+  - **许可**：PojavLauncher 组件为 GPL-3.0（与本项目一致），MetalANGLE
+    自定义许可（ANGLE 系）—— 引用时按上游 NOTICE 标注。
+- **CI**：`.github/workflows/ci.yml` 的 `ios` job —— `flutter build ios
+  --simulator --debug`（模拟器构建免签名；设备版 Release 要开发者账号，
+  后续接）→ 挑可用 iPhone 模拟器（按 UDID，跨 Xcode 镜像稳）→
+  `simctl install/launch`（页面钩子经 `SIMCTL_CHILD_*` 环境变量传入，
+  与桌面的环境变量钩子同一套）→ `simctl io screenshot` 四场景。
 
 ## 启动器核心（lib/services/launcher/）
 

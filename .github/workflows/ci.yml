@@ -136,8 +136,9 @@ jobs:
       - run: flutter test
 
       # 模拟器构建不需要签名；设备版 Release 需要开发者账号，先不配。
+      # 用 release：AOT 启动比 debug 快一个量级，模拟器截图不用干等。
       - name: 构建 iOS（模拟器）
-        run: flutter build ios --simulator --debug
+        run: flutter build ios --simulator --release
 
       - name: 启动模拟器
         id: sim
@@ -165,17 +166,30 @@ jobs:
             local name="$1"; shift
             local env_args=()
             for kv in "$@"; do env_args+=("SIMCTL_CHILD_$kv"); done
+            # --console-pty 抓应用 stdout/stderr（Dart 异常 / debugPrint 都在
+            # 这里），后台挂着，terminate 后自然结束。
             if [ ${#env_args[@]} -gt 0 ]; then
-              env "${env_args[@]}" xcrun simctl launch "$UDID" dev.mint.mint
+              env "${env_args[@]}" xcrun simctl launch --console-pty \
+                "$UDID" dev.mint.mint >"build/shots/console-$name.log" 2>&1 &
             else
-              xcrun simctl launch "$UDID" dev.mint.mint
+              xcrun simctl launch --console-pty \
+                "$UDID" dev.mint.mint >"build/shots/console-$name.log" 2>&1 &
             fi
-            # 等首帧 + 页面钩子跳转稳定。
-            sleep 8
-            xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png"
+            # 等首帧：白屏截图几乎不占字节，按文件大小轮询（纯白 ~40KB，
+            # 有内容 >100KB），最多 150 秒。
+            local ok=0
+            for _ in $(seq 1 30); do
+              sleep 5
+              xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
+              if [ -f "build/shots/ios-$name.png" ] &&
+                 [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 100000 ]; then
+                ok=1
+                break
+              fi
+            done
+            echo "shot $name: content=$ok"
             xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
             sleep 2
-            echo "shot $name done"
           }
 
           shot home
@@ -183,7 +197,12 @@ jobs:
           shot downloads MINT_TEST_PAGE=downloads
           shot dark MINT_THEME_MODE=dark
 
-      - name: 上传截图
+          # 兜底诊断：应用进程的统一日志（崩溃 / 插件报错在这里）。
+          xcrun simctl spawn "$UDID" log show --last 15m \
+            --predicate 'process == "Runner"' --style compact \
+            > build/shots/unified-log.txt 2>&1 || true
+
+      - name: 上传截图与诊断
         uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
