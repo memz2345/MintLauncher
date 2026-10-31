@@ -33,6 +33,8 @@ dependencies:
   path: ^1.9.0
   # Windows 物理内存查询（GlobalMemoryStatusEx）
   ffi: ^2.1.0
+  # iOS 沙盒文档目录（数据目录注入，见 services/launcher/ios_data_dir.dart）
+  path_provider: ^2.1.5
   # 桌面端拖入整合包
   desktop_drop: ^0.5.0
 

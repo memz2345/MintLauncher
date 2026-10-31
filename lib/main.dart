@@ -14,6 +14,8 @@ import 'package:mint/services/launcher/account.dart' show createOfflineAccount;
 import 'package:mint/services/launcher/android_data_dir.dart'
     show androidDataDirLookup;
 import 'package:mint/services/launcher/game_dir.dart' as game_dir;
+import 'package:mint/services/launcher/ios_data_dir.dart'
+    show iosDataDirLookup;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
 import 'package:mint/services/settings_service.dart';
@@ -61,10 +63,14 @@ const _kTestVTouch = bool.fromEnvironment('MINT_TEST_VTOUCH');
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Android 数据目录查询走 MethodChannel，注入给 GameDir（headless 的
-  // e2e 工具链不 import Flutter，见 game_dir.dart）。
+  // Android 数据目录查询走 MethodChannel，iOS 走 path_provider 沙盒文档
+  // 目录，都注入给 GameDir（headless 的 e2e 工具链不 import Flutter，
+  // 见 game_dir.dart）。
   if (Platform.isAndroid) {
     game_dir.GameDir.androidDataDirLookup = androidDataDirLookup;
+  }
+  if (Platform.isIOS) {
+    game_dir.GameDir.iosDataDirLookup = iosDataDirLookup;
   }
 
   // 部分国产 ROM / 模拟器镜像会吞掉应用进程的 logcat，Flutter 异常只剩

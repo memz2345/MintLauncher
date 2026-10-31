@@ -17,8 +17,31 @@ class GameDir {
   /// （e2e 冒烟）不拉进 Flutter 依赖。
   static Future<String?> Function()? androidDataDirLookup;
 
+  /// iOS 侧注入的沙盒文档目录查询（path_provider）。iOS 的进程 HOME 不
+  /// 保证可写（CI 模拟器进程甚至没有 HOME，相对路径 `./x` 直接 EROFS），
+  /// 必须走 getApplicationDocumentsDirectory。同样用注入避免 headless
+  /// 工具链拉进 Flutter。
+  static Future<String?> Function()? iosDataDirLookup;
+
   /// 启动器数据根目录（不是 .minecraft）。
   static Future<String> launcherDataDir() async {
+    if (Platform.isIOS) {
+      final lookup = iosDataDirLookup;
+      if (lookup != null) {
+        try {
+          final dir = await lookup();
+          if (dir != null && dir.isNotEmpty) {
+            return p.join(dir, 'MintLauncher');
+          }
+        } catch (_) {}
+      }
+      // lookup 没注入或失败：落到沙盒 HOME 的 Documents（真机/模拟器
+      // 进程一般有 HOME；模拟器 CI 上拿不到就只能暴露给上层兜底）。
+      final home = Platform.environment['HOME'];
+      if (home != null && home.isNotEmpty) {
+        return p.join(home, 'Documents', 'MintLauncher');
+      }
+    }
     if (Platform.isAndroid) {
       // Android 11+ 不能随便写 /sdcard 根目录；app 专属外部目录不需要
       // 存储权限，卸载时随应用一起清理，也方便 adb 拉日志。
