@@ -135,10 +135,10 @@ jobs:
 
       - run: flutter test
 
-      # 模拟器构建不需要签名；设备版 Release 需要开发者账号，先不配。
-      # 用 release：AOT 启动比 debug 快一个量级，模拟器截图不用干等。
+      # 模拟器只支持 debug 构建（Flutter 不给 simulator 出 release）；
+      # 设备版 Release 需要开发者账号，先不配。
       - name: 构建 iOS（模拟器）
-        run: flutter build ios --simulator --release
+        run: flutter build ios --simulator --debug
 
       - name: 启动模拟器
         id: sim
@@ -176,9 +176,10 @@ jobs:
                 "$UDID" dev.mint.mint >"build/shots/console-$name.log" 2>&1 &
             fi
             # 等首帧：白屏截图几乎不占字节，按文件大小轮询（纯白 ~40KB，
-            # 有内容 >100KB），最多 150 秒。
+            # 有内容 >100KB）。debug + 虚拟化模拟器上 Dart JIT 首帧很慢，
+            # 上限 240 秒。
             local ok=0
-            for _ in $(seq 1 30); do
+            for _ in $(seq 1 48); do
               sleep 5
               xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
               if [ -f "build/shots/ios-$name.png" ] &&
