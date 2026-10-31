@@ -18,9 +18,13 @@
 - **Linux 游戏启动实测（独立 job）**：Xvfb + `LIBGL_ALWAYS_SOFTWARE=1 /
   GALLIUM_DRIVER=llvmpipe`（即「CPU 软件渲染」后端在 Linux 的实现路径）下跑
   `dart run tool/e2e_launch_test.dart 1.20.4` —— 清单 → 安装（库 / 客户端 /
-  资源 / natives）→ 缺 Java 自动下载 Mojang Linux 运行时 → 起游戏进程 →
-  观察 90 秒；通过标准 = 日志出现 `LWJGL Version` 且无主类异常。
-  `MINT_E2E_MIRROR=official` 直连官方源（海外机器更快）。
+  资源 / natives）→ 缺 Java 自动下载 → 起游戏进程 → 观察 90 秒。
+  **2026-10-31 已实测通过**：CI 机器上检测到 Temurin 17，游戏在纯 CPU 渲染
+  （llvmpipe）下完成启动、LWJGL 3.3.2 初始化、纹理图集构建，存活 90 秒。
+  通过标准 = 日志出现 `LWJGL version`（大小写不敏感，1.7.10 的 `LWJGL
+  Version` 也认）且无主类异常。`MINT_E2E_MIRROR=official` 直连官方源。
+  headless 工具链（`tool/e2e_*.dart`）已与 Flutter 解耦 —— game_dir 的
+  Android 数据目录查询改为 main.dart 注入（`GameDir.androidDataDirLookup`）。
 - **Windows 构建与测试**、**Android Debug APK 编译检查** 同跑，防跨平台回归。
 
 ## 平台
@@ -28,7 +32,7 @@
 | 平台 | 状态 | 启动方案 |
 |---|---|---|
 | Windows | ✅ 可用 | 普通 Java 进程（参考 HMCL） |
-| macOS / Linux | 🧪 CI 兼容测试 | 同 Windows 逻辑；GitHub Actions（ubuntu）上构建 + Xvfb / weston headless / KWin 模糊探针持续冒烟（见 `.github/workflows/ci.yml`） |
+| macOS / Linux | 🧪 CI 持续验证 | 同 Windows 逻辑；GitHub Actions 已实测：构建 / Xvfb / weston headless / KWin 模糊探针 / **游戏 e2e（1.20.4 安装 → 启动 → LWJGL 3.3.2 初始化 → 纯 CPU 渲染存活 90s）** |
 | Android | 🧪 实验 | FCL 运行时（JRE8/JRE17 + LWJGL3/lwjglx + GL4ES），x86_64 模拟器与 arm64 真机均已跑通 1.7.10，targetSdk 37 |
 
 ## 界面（布局参考 FCL，标题栏移植自 local2api）
