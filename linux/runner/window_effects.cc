@@ -239,7 +239,8 @@ bool x11_apply_blur(GdkWindow* gdk_window, bool enable) {
   if (!GDK_IS_X11_WINDOW(gdk_window)) {
     return false;
   }
-  Display* dpy = gdk_x11_window_get_xdisplay(gdk_window);
+  Display* dpy =
+      gdk_x11_display_get_xdisplay(gdk_window_get_display(gdk_window));
   Window xid = gdk_x11_window_get_xid(gdk_window);
   if (!dpy || !xid) {
     return false;
@@ -423,7 +424,12 @@ void mint_backdrop_configure_window(GtkWindow* window, FlView* view) {
 
 void mint_backdrop_register(FlView* view) {
   GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(view)));
-  FlBinaryMessenger* messenger = fl_view_get_binary_messenger(view);
+  // FlView 实现了 FlPluginRegistry,走插件注册员的通道拿 messenger
+  // (generated_plugin_registrant.cc 同款姿势)。
+  g_autoptr(FlPluginRegistrar) registrar =
+      fl_plugin_registry_get_registrar_for_plugin(FL_PLUGIN_REGISTRY(view),
+                                                  "MintBackdrop");
+  FlBinaryMessenger* messenger = fl_plugin_registrar_get_messenger(registrar);
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
   g_autoptr(FlMethodChannel) channel = fl_method_channel_new(
       messenger, "mint/backdrop", FL_METHOD_CODEC(codec));
