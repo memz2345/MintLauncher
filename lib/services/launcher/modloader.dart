@@ -101,7 +101,7 @@ class ModloaderService {
               e['version'] as String,
         }.toList();
         if (builds.isNotEmpty) {
-          return _markedForgeBuilds(game, builds);
+          return await _markedForgeBuilds(game, builds);
         }
       } catch (_) {
         // 镜像挂了走官方兜底。

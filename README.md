@@ -7,7 +7,7 @@
 | 平台 | 状态 | 启动方案 |
 |---|---|---|
 | Windows | ✅ 可用 | 普通 Java 进程（参考 HMCL） |
-| macOS / Linux | 骨架就绪 | 同 Windows 逻辑（未实测） |
+| macOS / Linux | 🧪 CI 兼容测试 | 同 Windows 逻辑；GitHub Actions（ubuntu）上构建 + Xvfb / weston headless / KWin 模糊探针持续冒烟（见 `.github/workflows/ci.yml`） |
 | Android | 🧪 实验 | FCL 运行时（JRE8/JRE17 + LWJGL3/lwjglx + GL4ES），x86_64 模拟器与 arm64 真机均已跑通 1.7.10，targetSdk 37 |
 
 ## 界面（布局参考 FCL，标题栏移植自 local2api）
@@ -223,6 +223,26 @@
   的半透明标题栏；首帧前后 / 获得焦点时还会补设 caption NONE 兜底。
   `--dart-define=MINT_WINDOW_EFFECT=off|mica|acrylic|tabbed|aero` 可强制某一种，
   `MINT_BACKDROP_CLEAR=true` 去掉 Flutter 侧底色（诊断用）。
+- **窗口材质（Linux，2026-10-31 起）**：与 Windows 同思路 —— 用**系统提供的
+  模糊接口**（`linux/runner/window_effects.cc`，通道同为 `mint/backdrop`）：
+  - X11（含 XWayland）+ KWin → `_KDE_NET_WM_BLUR_BEHIND_REGION` 原子；
+    KWin 读到 0 / 1 个 cardinal 即整窗模糊（kwin `updateBlurRegion` 同款），
+    不用跟着 DPI / 窗口尺寸重算矩形；
+  - Wayland + KWin 6.3+ → `ext_background_effect_v1`（wayland-protocols 标准
+    协议，NULL region = 移除、双缓冲随 surface commit 生效）；
+  - Wayland + 老 KWin / Plasma 5 → `org_kde_kwin_blur`（KDE 私有协议）；
+    两份协议 XML 在仓库里（`linux/runner/protocols/`），由 wayland-scanner
+    构建期生成代码，缺 scanner / libwayland-client 的环境自动降级纯 X11；
+  - 整窗模糊提交**超大矩形**（KWindowSystem `installBlur` 同款），窗口
+    改尺寸不用重新提交；
+  - 前置条件：有混成器时把顶层窗口换成 RGBA 可视区 + `app_paintable` +
+    透明 draw 回调 + FlView 底 `#00000000`（flutter-acrylic 同款姿势），
+    无混成（Xvfb / 关闭混成）保持黑色不透明底；
+  - GNOME / Mutter 等没有公开的按窗口模糊接口 → 能力探测如实返回不可用，
+    设置页显示「当前桌面环境没有公开的窗口模糊接口」；四种 Windows 模式在
+    Linux 上收敛成「关闭 / 窗口模糊（系统）」两项（都落到 KWin 的同一实现，
+    存的仍是 acrylic 档）；`--dart-define=MINT_TEST_BACKDROP=acrylic|mica…`
+    启动即应用（CI 的 KWin 探针用 xprop 验证原子真的设置上）。
 - **鼠标 / 键盘**：Esc、鼠标侧键、Alt+← 返回；F11 全屏；Ctrl+1…3 切换一级页；
   Ctrl+F 搜索；Ctrl+M 版本管理；F5 刷新；版本列表 ↑↓ 选择、Enter 启动、
   F2 重命名、Delete 删除。**启动准备阶段按 Esc / 启动窗口「取消」中断启动**
@@ -756,6 +776,12 @@ HMCL 的图形后端 / 运行时思路补充（`lib/src/enums.dart` + 设置页�
 flutter run -d windows          # 开发
 flutter build windows --release # 产物 build/windows/x64/runner/Release/mint.exe
 flutter test                    # 单测（整合包识别 / 布局 / 标题栏 / 下拉刷新…）
+
+# Linux（依赖 clang cmake ninja pkg-config libgtk-3-dev libwayland-dev）
+flutter build linux --release   # 产物 build/linux/x64/release/bundle/mint
+bash tool/ci/smoke_x11.sh build/linux/x64/release/bundle/mint build/smoke/x11
+bash tool/ci/smoke_wayland.sh build/linux/x64/release/bundle/mint build/smoke/wayland
+bash tool/ci/kwin_blur_probe.sh build/linux/x64/release/bundle/mint build/smoke/kwin
 
 # 不开 GUI 的端到端冒烟（清单→安装→Java→启动→观察 90 秒）
 dart run tool/e2e_launch_test.dart 1.20.4
