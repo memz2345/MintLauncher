@@ -8,7 +8,9 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     // iOS 26 Liquid Glass 桥（悬浮底栏 / 返回键的系统玻璃）。
-    GlassBridge.register(with: self.registrar(forPlugin: "GlassBridge"))
+    if let registrar = self.registrar(forPlugin: "GlassBridge") {
+      GlassBridge.register(with: registrar)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
