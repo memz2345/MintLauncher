@@ -119,6 +119,77 @@ jobs:
       - name: 编译 Debug APK
         run: flutter build apk --debug
 
+  ios:
+    name: iOS 构建 + 模拟器实跑截图
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - run: flutter test
+
+      # 模拟器构建不需要签名；设备版 Release 需要开发者账号，先不配。
+      - name: 构建 iOS（模拟器）
+        run: flutter build ios --simulator --debug
+
+      - name: 启动模拟器
+        id: sim
+        run: |
+          set -e
+          # 在可用设备里挑一台 iPhone（不同 Xcode 镜像名字会变，按 UDID 找最稳）。
+          UDID=$(xcrun simctl list devices available |
+            grep -m1 -E "iPhone" |
+            sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "udid=$UDID" >>"$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID"
+          # 等模拟器就绪（bootstatus 轮询到不再启动中为止）。
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: 模拟器实跑 + 多场景截图
+        shell: bash   # -eo pipefail
+        run: |
+          set -e
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP="build/ios/iphonesimulator/Runner.app"
+          mkdir -p build/shots
+          xcrun simctl install "$UDID" "$APP"
+
+          shot() {
+            local name="$1"; shift
+            local env_args=()
+            for kv in "$@"; do env_args+=("SIMCTL_CHILD_$kv"); done
+            if [ ${#env_args[@]} -gt 0 ]; then
+              env "${env_args[@]}" xcrun simctl launch "$UDID" dev.mint.mint
+            else
+              xcrun simctl launch "$UDID" dev.mint.mint
+            fi
+            # 等首帧 + 页面钩子跳转稳定。
+            sleep 8
+            xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png"
+            xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
+            sleep 2
+            echo "shot $name done"
+          }
+
+          shot home
+          shot settings MINT_TEST_PAGE=settings
+          shot downloads MINT_TEST_PAGE=downloads
+          shot dark MINT_THEME_MODE=dark
+
+      - name: 上传截图
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: build/shots
+          if-no-files-found: warn
+
   linux-game:
     name: Linux 游戏启动实测（Xvfb + llvmpipe）
     runs-on: ubuntu-latest
