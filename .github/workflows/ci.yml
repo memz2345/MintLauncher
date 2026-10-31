@@ -121,7 +121,9 @@ jobs:
 
   ios:
     name: iOS 构建 + 模拟器实跑截图
-    runs-on: macos-latest
+    # macos-26 才带 Xcode 26（iOS 26 模拟器 runtime + UIGlassEffect）；
+    # macos-15 及以下是 iOS 18 runtime，玻璃能力探测会如实降级为自绘。
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -144,6 +146,9 @@ jobs:
         id: sim
         run: |
           set -e
+          # 诊断：Xcode 版本与可用 runtime（玻璃能力依赖 iOS 26 runtime）。
+          xcodebuild -version
+          xcrun simctl list runtimes | grep -E "iOS" || true
           # 在可用设备里挑一台 iPhone（不同 Xcode 镜像名字会变，按 UDID 找最稳）。
           UDID=$(xcrun simctl list devices available |
             grep -m1 -E "iPhone" |
@@ -229,6 +234,25 @@ jobs:
           xcrun simctl spawn "$UDID" log show --last 15m \
             --predicate 'process == "Runner"' --style compact \
             > build/shots/unified-log.txt 2>&1 || true
+
+      # 「试一下能不能启动游戏」第一性实验：模拟器进程跑在 macOS 上、
+      # 允许 JIT 与 dlopen 未签名 dylib —— 用 FFI 起 macOS arm64 的
+      # libjvm 验证「应用内 JVM」这条路。真机仍需 Pojav 路线。
+      - name: iOS 起 JVM 探针
+        run: |
+          set -e
+          UDID="${{ steps.sim.outputs.udid }}"
+          DATA=$(xcrun simctl get_app_container "$UDID" dev.mint.mint data)
+          touch "$DATA/Documents/run_jvm_probe"
+          xcrun simctl launch "$UDID" dev.mint.mint >/dev/null 2>&1 || true
+          # 等探针结果（下载 ~50MB + 解压 + 起虚拟机，最多 6 分钟）。
+          for _ in $(seq 1 72); do
+            sleep 5
+            [ -f "$DATA/Documents/jvm_probe_result.txt" ] && break
+          done
+          echo "==== JVM probe result ===="
+          cat "$DATA/Documents/jvm_probe_result.txt" || echo "(无结果文件)"
+          cp "$DATA/Documents/jvm_probe_result.txt" build/shots/jvm_probe_result.txt 2>/dev/null || true
 
       - name: 上传截图与诊断
         uses: actions/upload-artifact@v4

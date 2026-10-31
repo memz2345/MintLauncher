@@ -38,6 +38,7 @@ class IosLiquidGlass {
         'getCapabilities',
       );
       _available = caps?['liquidGlass'] == true;
+      debugPrint('IosLiquidGlass available=$_available (UIGlassEffect 探测)');
     } catch (e) {
       debugPrint('IosLiquidGlass caps failed: $e');
       _available = false;

@@ -19,6 +19,7 @@ import 'package:mint/services/launcher/android_data_dir.dart'
 import 'package:mint/services/launcher/game_dir.dart' as game_dir;
 import 'package:mint/services/launcher/ios_data_dir.dart'
     show iosDataDirLookup;
+import 'package:mint/services/launcher/ios_jvm_probe.dart' show IosJvmProbe;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
 import 'package:mint/services/settings_service.dart';
@@ -178,10 +179,11 @@ Future<void> main(List<String> args) async {
   if (testTheme.isEmpty) {
     testTheme = Platform.environment['MINT_TEST_IMPORT_THEME'] ?? '';
   }
+  String? iosDocsPath;
   if (Platform.isIOS) {
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      final marker = File(p.join(docs.path, 'import_theme.mtz'));
+      iosDocsPath = (await getApplicationDocumentsDirectory()).path;
+      final marker = File(p.join(iosDocsPath, 'import_theme.mtz'));
       if (marker.existsSync()) {
         testTheme = marker.path;
       }
@@ -198,16 +200,21 @@ Future<void> main(List<String> args) async {
         hasBootAnimation: theme.bootAnimationDir.isNotEmpty,
       );
       // 文件标记模式：导入成功后删掉，重launch 不会重复导入几十 MB。
-      if (Platform.isIOS) {
+      if (Platform.isIOS && iosDocsPath != null) {
         try {
-          final docs = await getApplicationDocumentsDirectory();
-          final marker = File(p.join(docs.path, 'import_theme.mtz'));
+          final marker = File(p.join(iosDocsPath, 'import_theme.mtz'));
           if (marker.path == testTheme) await marker.delete();
         } catch (_) {}
       }
     } catch (e) {
       debugPrint('测试主题导入失败：$e');
     }
+  }
+  // 「试一下能不能启动游戏」第一性实验：模拟器进程里 dlopen libjvm 起
+  // JVM（模拟器跑在 macOS 上、允许 JIT；真机仍需 Pojav 路线）。结果写
+  // 沙盒 jvm_probe_result.txt，CI 直接 cat。
+  if (iosDocsPath != null) {
+    IosJvmProbe.maybeRun(iosDocsPath);
   }
   await ThemeFonts.load(settings);
   // 把应用内语言选择同步到 Android 13+ 的「应用语言」设置
