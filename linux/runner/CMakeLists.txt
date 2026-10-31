@@ -24,6 +24,13 @@ add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
+# X11（窗口模糊的 _KDE_NET_WM_BLUR_BEHIND_REGION 原子要调 Xlib）。
+# gtk+-3.0.pc 只把 x11 放在 Requires.private，默认不带出链接，要显式找。
+pkg_check_modules(X11 IMPORTED_TARGET x11)
+if(TARGET PkgConfig::X11)
+  target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::X11)
+endif()
+
 # 窗口模糊（Wayland 侧）：用 wayland-scanner 从协议 XML 生成客户端代码。
 # X11 侧只需要 Xlib（GTK3 已带），任何环境都能编；缺 wayland-scanner /
 # libwayland-client 的环境自动降级为纯 X11 实现。
