@@ -808,7 +808,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Text(
                     Platform.isWindows
                         ? 'Mica / Tabbed 需要 Windows 11；Windows 10 会自动降级为 Acrylic。'
-                        : '窗口材质只在 Windows 10 及以上可用。',
+                        : Platform.isLinux
+                        ? '系统模糊由桌面合成器提供：目前支持 KDE（KWin）；'
+                            'GNOME 等暂无公开的按窗口模糊接口。'
+                        : '窗口材质只在 Windows / Linux 桌面端可用。',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(
@@ -1583,9 +1586,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   String _backdropSummary(SettingsService settings) {
-    if (!Platform.isWindows) return '仅 Windows 10+ 可用';
     final backdrop = WindowBackdrop.instance;
-    if (!backdrop.available) return '当前 Windows 版本不可用';
+    if (Platform.isMacOS) return '仅 Windows / Linux 可用';
+    if (!backdrop.available) {
+      return Platform.isWindows
+          ? '当前 Windows 版本不可用'
+          : '当前桌面环境没有公开的窗口模糊接口';
+    }
     final mode = settings.windowEffect;
     if (mode == WindowBackdropMode.disabled) return '关闭（纯色窗口）';
     final applied = backdrop.appliedMode;
@@ -1593,7 +1600,15 @@ class _SettingsPageState extends State<SettingsPage> {
       return '${mode.label} → 已降级为 ${applied.label}';
     }
     if (!backdrop.supports(mode)) {
-      return '${mode.label}（当前系统不支持，将降级）';
+      return Platform.isLinux
+          ? '${mode.label}（当前桌面环境不支持）'
+          : '${mode.label}（当前系统不支持，将降级）';
+    }
+    if (Platform.isLinux) {
+      // Linux 只有系统模糊一种实现（四种模式等价），显示环境信息更有用。
+      final de = backdrop.desktop.isEmpty ? '系统' : backdrop.desktop;
+      final session = backdrop.session.isEmpty ? '' : ' · ${backdrop.session}';
+      return '窗口模糊 · $de$session';
     }
     final build = backdrop.build;
     return build >= 22621 ? '${mode.label} · Windows 11' : mode.label;
@@ -1613,34 +1628,54 @@ class _SettingsPageState extends State<SettingsPage> {
     SettingsService settings,
   ) async {
     final backdrop = WindowBackdrop.instance;
+    final bool onLinux = Platform.isLinux;
+    // Linux 只有「系统模糊」一种实现：四种 Windows 模式全部映射到它，
+    // 选项就收敛成 关闭 / 窗口模糊 两项（存的仍是 WindowBackdropMode，
+    // 系统模糊落 acrylic 档）。
+    final options = onLinux
+        ? [
+            MintChoice(
+              value: WindowBackdropMode.disabled,
+              label: WindowBackdropMode.disabled.label,
+              subtitle: WindowBackdropMode.disabled.description,
+              icon: Icons.crop_square,
+            ),
+            MintChoice(
+              value: WindowBackdropMode.acrylic,
+              label: '窗口模糊（系统）',
+              subtitle: backdrop.supports(WindowBackdropMode.acrylic)
+                  ? '由桌面合成器提供（KDE / KWin），GNOME 等暂无公开接口'
+                  : '当前桌面环境不支持',
+              icon: Icons.blur_on,
+              enabled: backdrop.supports(WindowBackdropMode.acrylic),
+            ),
+          ]
+        : [
+            for (final mode in WindowBackdropMode.values)
+              MintChoice(
+                value: mode,
+                label: mode.label,
+                subtitle: mode == WindowBackdropMode.disabled ||
+                        backdrop.supports(mode)
+                    ? mode.description
+                    : '${mode.description} · 需要 Windows 11',
+                icon: switch (mode) {
+                  WindowBackdropMode.disabled => Icons.crop_square,
+                  WindowBackdropMode.mica => Icons.wallpaper,
+                  WindowBackdropMode.acrylic => Icons.blur_on,
+                  WindowBackdropMode.tabbed => Icons.tab,
+                  WindowBackdropMode.aero => Icons.gradient,
+                },
+                enabled: mode == WindowBackdropMode.disabled ||
+                    backdrop.supports(mode),
+              ),
+          ];
     final result = await pushMintChoicePage<WindowBackdropMode>(
       context,
       miuix: mintMiuixOf(context),
       title: '窗口背景材质',
       selected: settings.windowEffect,
-      options: [
-        for (final mode in WindowBackdropMode.values)
-          MintChoice(
-            value: mode,
-            label: mode.label,
-            subtitle: Platform.isWindows
-                ? (mode == WindowBackdropMode.disabled ||
-                          backdrop.supports(mode)
-                      ? mode.description
-                      : '${mode.description} · 需要 Windows 11')
-                : '仅 Windows 10+ 可用',
-            icon: switch (mode) {
-              WindowBackdropMode.disabled => Icons.crop_square,
-              WindowBackdropMode.mica => Icons.wallpaper,
-              WindowBackdropMode.acrylic => Icons.blur_on,
-              WindowBackdropMode.tabbed => Icons.tab,
-              WindowBackdropMode.aero => Icons.gradient,
-            },
-            enabled:
-                mode == WindowBackdropMode.disabled ||
-                (Platform.isWindows && backdrop.supports(mode)),
-          ),
-      ],
+      options: options,
     );
     if (result != null) await settings.setWindowEffect(result);
   }

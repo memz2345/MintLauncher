@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "window_effects.h"
 
 struct _MyApplication {
   GtkApplication parent_instance;
@@ -64,6 +65,10 @@ static void my_application_activate(GApplication* application) {
   // for transparent.
   gdk_rgba_parse(&background_color, "#000000");
   fl_view_set_background_color(view, &background_color);
+  // 窗口材质（系统模糊）：有混成器时把窗口换成 RGBA 可视区 + 透明底，
+  // KDE 的 KWin 模糊 / 其它系统接口才能透出来（window_effects.cc）。
+  // 没有混成器时保持上面的黑色底不动。
+  mint_backdrop_configure_window(window, view);
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
@@ -74,6 +79,9 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+
+  // mint/backdrop 方法通道（能力探测 / 应用模糊）。
+  mint_backdrop_register(view);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

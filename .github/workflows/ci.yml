@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux 兼容测试（构建 + X11/Wayland/KWin 冒烟）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev libwayland-dev \
+            xvfb imagemagick x11-utils xdotool weston dbus-x11
+
+      - name: 拉取 Dart 依赖
+        run: flutter pub get
+
+      - name: 静态分析
+        run: flutter analyze
+
+      - name: 单元测试
+        run: flutter test
+
+      # MINT_TEST_BACKDROP：KWin 探针用（应用启动即应用窗口材质）。
+      - name: 构建 Linux 版本
+        run: >
+          flutter build linux --release
+          --dart-define=MINT_TEST_BACKDROP=acrylic
+
+      - name: X11 冒烟（Xvfb）
+        run: bash tool/ci/smoke_x11.sh build/linux/x64/release/bundle/mint build/smoke/x11
+
+      - name: Wayland 冒烟（weston headless）
+        run: bash tool/ci/smoke_wayland.sh build/linux/x64/release/bundle/mint build/smoke/wayland
+
+      # best-effort：Xvfb 里跑真 KWin 验证模糊原子接线。
+      # kwin 在无 GL 的虚拟显示上可能开不了混成，但原子设置不需要混成。
+      - name: KWin 模糊探针（X11 原子）
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y --no-install-recommends kwin-x11
+          bash tool/ci/kwin_blur_probe.sh build/linux/x64/release/bundle/mint build/smoke/kwin
+
+      - name: 上传冒烟产物（截图 / 日志）
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-smoke
+          path: build/smoke
+          if-no-files-found: warn
+
+      - name: 上传 Linux 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: build/linux/x64/release/bundle
+          if-no-files-found: warn
+
+  windows:
+    name: Windows 构建与测试
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - run: flutter test
+
+      - name: 构建 Windows 版本
+        run: flutter build windows --release
+
+  android:
+    name: Android 编译检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: 编译 Debug APK
+        run: flutter build apk --debug

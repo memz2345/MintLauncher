@@ -6,7 +6,6 @@ import 'package:mint/services/download_center.dart';
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/launcher/modpack_exporter.dart';
 import 'package:mint/services/settings_service.dart';
-import 'package:mint/src/enums.dart' show UiStyleX;
 import 'package:mint/ui/mint_icons.dart' show mintMiuixOf;
 
 import 'common.dart';

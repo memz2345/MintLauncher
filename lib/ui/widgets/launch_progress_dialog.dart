@@ -6,7 +6,6 @@ import 'package:flutter_miuix/miuix.dart';
 
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/crash_analyzer.dart';
-import 'package:mint/src/enums.dart' show UiStyleX;
 import 'package:mint/src/expressive_loading_indicator.dart';
 import 'package:mint/ui/mint_icons.dart' show mintFluentOf, mintMiuixOf;
 import 'package:mint/ui/pages/common.dart'

@@ -18,6 +18,7 @@ import 'package:mint/services/theme_fonts.dart';
 import 'package:mint/services/theme_package.dart';
 import 'package:mint/services/vtouch/vtouch_overlay_service.dart';
 import 'package:mint/services/window_backdrop.dart';
+import 'package:mint/src/enums.dart' show WindowBackdropMode;
 import 'package:mint/ui/app.dart';
 import 'package:mint/ui/log_window.dart';
 import 'package:mint/ui/nav_state.dart';
@@ -117,6 +118,12 @@ Future<void> main(List<String> args) async {
 
   final settings = SettingsService();
   await settings.load();
+  // CI 回归钩子：--dart-define=MINT_TEST_BACKDROP=acrylic|mica|… 启动即
+  // 应用对应窗口材质（Linux CI 在 KWin 下用 xprop 验证模糊原子真的设置上了）。
+  const testBackdrop = String.fromEnvironment('MINT_TEST_BACKDROP');
+  if (testBackdrop.isNotEmpty) {
+    await settings.setWindowEffect(WindowBackdropMode.fromId(testBackdrop));
+  }
   // MIUI 主题包：解析结果 + 主题字体要在 runApp 之前就绪（FontLoader 只能在
   // 引擎启动前注册；主题字体没就绪时安静地回退系统字体）。
   await MintThemeLibrary.instance.load();

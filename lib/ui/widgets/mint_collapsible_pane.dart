@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mint/services/window_backdrop.dart';
-import 'package:mint/src/enums.dart';
 import 'package:mint/ui/mint_icons.dart';
 import 'package:mint/widgets/app_tooltip.dart';
 

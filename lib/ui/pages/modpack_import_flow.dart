@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/launcher/modpack_importer.dart';
-import 'package:mint/src/enums.dart' show UiStyleX;
 import 'package:mint/ui/mint_icons.dart' show mintMiuixOf;
 
 import 'common.dart';

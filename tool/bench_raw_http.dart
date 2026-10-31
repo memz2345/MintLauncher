@@ -21,7 +21,7 @@ Future<void> main() async {
       final req = await client.getUrl(Uri.parse(url));
       res = await req.close();
     } on Exception catch (e) {
-      stdout.writeln('#\$i handshake err: \$e');
+      stdout.writeln('#$i handshake err: $e');
       continue;
     }
     var bytes = 0;
