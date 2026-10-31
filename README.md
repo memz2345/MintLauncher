@@ -2,6 +2,20 @@
 
 实验性多平台 Minecraft 启动器（Flutter）。**当前进度：Windows 端离线启动已跑通**（端到端实测 1.20.4 下载 → 启动 → 主菜单）；**Android x86_64 模拟器已实测 1.7.10 下载 → 主菜单 → 创建世界 → 进入游戏**；**Android arm64 真机（vivo V2403A / Android 16）已实测 1.7.10 / 1.15.2 点击进「选择世界」、a1.0.15（GL4ES）进主菜单并点开选世界、游戏内悬浮窗正常**。
 
+[![CI](https://github.com/memz2345/MintLauncher/actions/workflows/ci.yml/badge.svg)](https://github.com/memz2345/MintLauncher/actions/workflows/ci.yml)
+
+## CI（GitHub Actions，`.github/workflows/ci.yml`）
+
+- **Linux 兼容测试（ubuntu-latest）**：analyze → 174 项单测 → `flutter build linux` →
+  三段冒烟 —— ① **Xvfb**（纯 X11、软渲染 Impeller GLES，进程存活 20s+ + 截图）；
+  ② **weston headless**（`GDK_BACKEND=wayland` 走 Wayland 路径，无 KDE 模糊协议时
+  能力探测如实降级）；③ **KWin 模糊探针**（Xvfb 里跑真 `kwin_x11`，`MINT_TEST_BACKDROP`
+  启动即应用材质，`xprop` 验证窗口上真的出现
+  `_KDE_NET_WM_BLUR_BEHIND_REGION(CARDINAL) = 0`）。
+  产物（三环境截图 + 应用 / 合成器日志）上传到 Actions artifact `linux-smoke`，
+  构建产物上传为 `linux-bundle`。
+- **Windows 构建与测试**、**Android Debug APK 编译检查** 同跑，防跨平台回归。
+
 ## 平台
 
 | 平台 | 状态 | 启动方案 |
