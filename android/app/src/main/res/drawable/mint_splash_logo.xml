@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mint 徽标：与启动器侧栏 / 首页同一个「M」圆角方块。
+     画布 288dp，内容缩在 192dp 安全区内（Android 12 SplashScreen 会按
+     圆形遮罩裁切，超出的部分会被切掉）。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="192dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <path
+        android:fillColor="#4C6FFF"
+        android:pathData="M100,48 L188,48 A52,52 0 0 1 240,100 L240,188 A52,52 0 0 1 188,240 L100,240 A52,52 0 0 1 48,188 L48,100 A52,52 0 0 1 100,48 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M96,196 L96,92 L120,92 L144,124 L168,92 L192,92 L192,196 L168,196 L168,136 L144,168 L120,136 L120,196 Z" />
+</vector>

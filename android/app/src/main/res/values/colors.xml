@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 与 Flutter 侧 AppTheme 的种子色一致（#4C6FFF）。 -->
+    <color name="mint_accent">#4C6FFF</color>
+
+    <!-- SplashScreen 背景：与 Flutter 首帧的浅色画布接近，收场不闪白/闪黑。 -->
+    <color name="mint_splash_background">#F7F8FA</color>
+</resources>

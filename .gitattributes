@@ -1,0 +1,52 @@
+# 自动处理文本换行（Windows 开发 / Linux CI 构建共用一份仓库）
+* text=auto
+
+# 源码与配置一律 LF，避免跨平台 diff 噪音
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
+*.gradle text eol=lf
+*.kts text eol=lf
+*.properties text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.sh text eol=lf
+*.c text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.java text eol=lf
+*.kt text eol=lf
+*.py text eol=lf
+*.frag text eol=lf
+*.html text eol=lf
+
+# Windows 专属
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.rc text eol=crlf
+*.sln text eol=crlf
+*.vcxproj text eol=crlf
+*.manifest text eol=crlf
+
+# 二进制
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.so binary
+*.dll binary
+*.exe binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.apk binary
+*.mtz binary
+*.mrpack binary
+*.tar.xz binary
+*.dex binary

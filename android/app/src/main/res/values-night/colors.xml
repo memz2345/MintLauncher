@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色系统下用纯黑，避免深色主题启动时闪一下浅色。 -->
+    <color name="mint_splash_background">#000000</color>
+</resources>

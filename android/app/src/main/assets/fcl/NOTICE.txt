@@ -1,0 +1,23 @@
+Mint Android game runtime
+=========================
+
+The Android build of Mint bundles the Java runtime, LWJGL3/lwjglx, native
+libraries and launcher classes from FoldCraftLauncher (FCL):
+
+  https://github.com/FCL-Team/FoldCraftLauncher
+  Copyright (C) FCL-Team and contributors
+  Licensed under GNU General Public License v3.0 (see LICENSE in this folder)
+
+The classes are loaded from dex assets by FclRuntime.kt; the native libraries
+are packaged under jniLibs/x86_64. Source for the bundled FCL runtime is
+available at the URL above (tag 1.3.4.3 / main branch).
+
+Some game-side features (gyroscope aiming, max refresh rate request, memory
+overlay, text input, sensitivity) are behaviorally derived from FCL's
+Gyroscope.java, JVMActivity.java, TouchCharInput.java and MenuSetting.kt
+(rewrites, not verbatim copies); see GameGyroscope.kt / GameActivity.kt /
+GameTweaksSettings.kt comments for per-file attribution.
+
+Mint's own Dart/Flutter code is not part of FCL and remains under the
+project's own terms. Distributing this APK therefore requires complying with
+GPL-3.0 for the bundled FCL components.

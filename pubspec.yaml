@@ -1,0 +1,68 @@
+name: mint
+description: "Mint Launcher - 实验性多平台 Minecraft 启动器（Flutter）。"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # 双风格 UI 的 miuix 那一套（local2api 同款：HyperOS 风格组件库）
+  flutter_miuix: ^1.3.0
+  # 动态取色（Windows 强调色 / Android Material You）
+  dynamic_color: ^1.6.8
+  flex_seed_scheme: ^4.0.1
+  material_color_utilities: any
+  provider: ^6.1.5
+
+  # 配置持久化
+  shared_preferences: ^2.2.2
+
+  # 离线账户 UUID（md5）、下载校验（sha1）
+  crypto: ^3.0.7
+  # 原生库解包（natives zip）与 Java 运行时解压
+  archive: ^4.5.2
+  # MIUI 主题包的 theme_values.xml / description.xml 解析
+  xml: ^6.6.1
+  path: ^1.9.0
+  # Windows 物理内存查询（GlobalMemoryStatusEx）
+  ffi: ^2.1.0
+  # 桌面端拖入整合包
+  desktop_drop: ^0.5.0
+
+  # 桌面端窗口尺寸/标题
+  window_manager: ^0.5.2
+  desktop_multi_window: ^0.3.1
+  file_selector: ^1.1.0
+  material_new_shapes: ^1.0.0
+  fluent_ui: ^4.16.1
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  # 渐进模糊顶栏的片元着色器（vendored liquid_glass_widgets，MIT）。
+  # 双趟可分离高斯，sigma 随到顶边的距离渐变；不支持 shader filter 的后端
+  # 会自动退化成均匀 BackdropFilter（见 widgets/progressive_blur.dart）。
+  #
+  # 云雾前景的片元着色器（Kimi K3.1 页头同风格的程序化云雾）：fbm + 域扭曲
+  # 出大理石纹白雾，blob 密度场聚成「飘过的云团」（见 widgets/
+  # mint_cloud_foreground.dart）。加载失败时组件直接不画（纯装饰可缺）。
+  shaders:
+    - shaders/progressive_blur.frag
+    - shaders/cloud_foreground.frag
+    - shaders/bg_effect.frag
+  assets:
+    # HMCL（GPL-3.0 项目）的加载器图标：forge/neoforge/fabric/quilt/optifine
+    # + grass（原版）。分发本项目时需遵守 GPL-3.0。
+    - assets/icons/
