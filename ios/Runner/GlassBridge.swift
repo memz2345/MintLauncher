@@ -174,7 +174,9 @@ final class BackMenuPresenter: NSObject, UIEditMenuInteractionDelegate {
         self?.select(index)
       }
     }
-    return UIMenu(title: "", options: .displayInline, children: actions)
+    // 不要 .displayInline：那个选项会把菜单渲染成横向分段条；
+    // 标准 UIMenu 才是 iOS 26 的竖向液态玻璃菜单（当前层打勾、更早层可选）。
+    return UIMenu(title: "", children: actions)
   }
 
   func editMenuInteraction(

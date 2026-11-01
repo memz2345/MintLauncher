@@ -41,24 +41,33 @@ if [ ! -f "$BUILD/libjvm.dylib.ready" ]; then
   echo "java.home=$HOME_DIR"
 
   echo "==== 3. 重打平台标签 macos -> ios-simulator + ad-hoc 重签 ===="
+  # vtool 的 platform 参数是 XNU 的数字枚举，不是字符串：
+  #   1 = macOS、2 = iOS、7 = IOSSIMULATOR（iOS 模拟器）。
+  # 参考：https://bogo.wtf/arm64-to-sim-dylibs.html
   retagged=0
+  failed=0
   while IFS= read -r -d '' f; do
     if ! file -b "$f" | grep -q 'Mach-O'; then
       continue
     fi
     tmp="$f.retag"
-    if vtool -set-build-version ios-simulator 17.0 17.0 -replace \
-        -output "$tmp" "$f" >/dev/null 2>&1 \
-      || vtool -set-build-version ios-simulator 17.0 17.0 \
+    codesign --remove-signature "$f" >/dev/null 2>&1 || true
+    if vtool -arch arm64 -set-build-version 7 17.0 17.0 -replace \
         -output "$tmp" "$f" >/dev/null 2>&1; then
       mv "$tmp" "$f"
       codesign --force --sign - --timestamp=none "$f" >/dev/null 2>&1 || true
       retagged=$((retagged + 1))
     else
+      failed=$((failed + 1))
+      if [ "$failed" -le 3 ]; then
+        echo "!! vtool 失败: $f"
+        vtool -arch arm64 -set-build-version 7 17.0 17.0 -replace \
+          -output "$tmp" "$f" 2>&1 | head -6 || true
+      fi
       rm -f "$tmp"
     fi
   done < <(find "$HOME_DIR" -type f -print0)
-  echo "retagged=$retagged"
+  echo "retagged=$retagged failed=$failed"
 
   echo "==== 4. 校验 libjvm 平台标签 ===="
   vtool -show-build "$HOME_DIR/lib/server/libjvm.dylib" | tee "$BUILD/libjvm.build.txt"
