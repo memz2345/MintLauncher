@@ -27,7 +27,7 @@ import UIKit
     // 平台视图：玻璃背景（Flutter 侧用 UiKitView 嵌进组件树）。
     registrar.register(
       GlassPlatformViewFactory(),
-      forView: "mint/liquid_glass"
+      withId: "mint/liquid_glass"
     )
   }
 }
