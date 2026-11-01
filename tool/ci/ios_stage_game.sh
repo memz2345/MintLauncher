@@ -47,7 +47,9 @@ fi
 echo "==== 3. 预置进应用沙盒 ===="
 DATA="$(xcrun simctl get_app_container "$UDID" dev.mint.mint data)"
 rm -rf "$DATA/Documents/macos_jdk" "$DATA/Documents/MintLauncher"
-cp -R "$JDK_HOME" "$DATA/Documents/macos_jdk"
+# 保持 Contents/Home 布局（探针按 macos_jdk/Contents/Home/bin/java 找）
+mkdir -p "$DATA/Documents/macos_jdk/Contents"
+cp -R "$JDK_HOME" "$DATA/Documents/macos_jdk/Contents/Home"
 mkdir -p "$DATA/Documents/MintLauncher"
 cp -R "$GAME" "$DATA/Documents/MintLauncher/minecraft"
 cp "$JAR" "$DATA/Documents/mc-client.jar"

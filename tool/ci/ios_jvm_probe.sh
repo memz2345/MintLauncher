@@ -77,13 +77,14 @@ if [ ! -f "$BUILD/libjvm.dylib.ready" ]; then
   # 直接把依赖改写成 runtimeRoot 绝对路径行不通：install_name_tool 不允许
   # 把 load command 里的字符串改长（"larger updated load commands do not
   # fit"），而 runtimeRoot 前缀（~110 字符）远比 /System/Library 长。
-  # 所以在根上建一个**符号链接农场** /m/<短码>，每个码 → 模拟器 runtime
-  # 的对应 framework，改写后的依赖串（/m/<码>/<名字>）恒短于原串。
+  # 所以建一个**短路径符号链接农场** <farm>/f00…，每个码 → 模拟器 runtime
+  # 的对应 framework，改写后的依赖串（<farm>/<码>/<名字>）恒短于原串。
+  # 农场放 $RUNNER_TEMP —— macOS 26 的系统卷密封只读（sudo mkdir /m 直接
+  # EROFS），runner temp 可写且够短（/Users/runner/work/_temp ≈ 25 字符，
+  # 比任何 /System/Library/Frameworks 依赖都短）。
   # /usr/lib 的依赖上一轮 dlopen(libjvm) 已验证能解析（宿主 dyld 兜底），
   # 保持原样不动，少改少错。
-  FARM=/m/mint-sim-jre
-  sudo rm -rf "$FARM"
-  sudo mkdir -p "$FARM"
+  FARM="$(mktemp -d "${RUNNER_TEMP:-/tmp}/mint-sim-XXXXXX")"
   RUNTIME_ROOT="$(python3 - "$UDID" <<'PY'
 import json, subprocess, sys
 udid = sys.argv[1]
@@ -132,7 +133,7 @@ def short_path(dep):
         if framework_dir not in mapping:
             code = f'f{len(mapping):02d}'
             target = f'{rr}/System/Library/{framework_dir}'
-            subprocess.run(['sudo', 'ln', '-sfn', target, f'{farm}/{code}'],
+            subprocess.run(['ln', '-sfn', target, f'{farm}/{code}'],
                            check=True)
             mapping[framework_dir] = f'{farm}/{code}'
             print(f'  {farm}/{code} -> {target}')

@@ -279,13 +279,15 @@ jobs:
       # 「试一下能不能启动游戏」第一性实验（同进程 dlopen JVM 路线）：
       # macOS JRE 重打 ios-simulator 平台标签后，JNI_CreateJavaVM 死在
       # libjava.dylib 硬编码的 macOS 框架路径 —— 本轮加依赖改写：
-      # /m 符号链接农场映射到模拟器 runtime 的平铺框架（install_name_tool
-      # 不能改长字符串，改写串必须更短），再看 JVM 能不能真起来。
+      # RUNNER_TEMP 里的短路径符号链接农场映射到模拟器 runtime 的平铺框架
+      # （install_name_tool 不能改长字符串，改写串必须更短；macOS 26 系统
+      # 卷只读，农场放不了 /m），再看 JVM 能不能真起来。
       - name: iOS 起 JVM 探针（依赖改写 + MC 主类验证）
         run: bash tool/ci/ios_jvm_probe.sh "${{ steps.sim.outputs.udid }}"
 
       - name: 上传截图与诊断
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ios-screenshots
           path: build/shots

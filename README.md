@@ -822,8 +822,9 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
     本轮加**依赖改写**：直接改写成 runtimeRoot 绝对路径行不通 ——
     `install_name_tool` 不允许把 load command 字符串改长（"larger updated
     load commands do not fit"），而 runtimeRoot 前缀比 `/System/Library`
-    长得多。所以在根上建**短路径符号链接农场** `/m/mint-sim-jre/f00…`
-    （每个码 → 模拟器 runtime 的对应平铺框架，改写串恒短于原串），
+    长得多。所以建**短路径符号链接农场** `<RUNNER_TEMP>/mint-sim-*/f00…`
+    （macOS 26 系统卷密封只读放不了 `/m`；每个码 → 模拟器 runtime 的
+    对应平铺框架，改写串恒短于原串），
     vtool 重打平台标签 + 改写 + ad-hoc 重签之后再 dlopen +
     `JNI_CreateJavaVM`；另外把 CI 预置的 1.20.4 客户端 jar 挂上
     `java.class.path`，JVM 起来后 `FindClass(net/minecraft/client/main/Main)`
