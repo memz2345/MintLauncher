@@ -329,7 +329,9 @@ jobs:
                    build/shots/game-launch-tail.log \
                    build/shots/mod_probe_result.txt \
                    build/shots/mod_probe_progress.txt \
-                   build/shots/mod-probe-mods-dir.txt; do
+                   build/shots/mod-probe-mods-dir.txt \
+                   build/shots/mod-console-content.log \
+                   build/shots/mod-unified-log.txt; do
             if [ -f "$f" ]; then
               gh release upload "$tag" "$f" --clobber || true
             fi
