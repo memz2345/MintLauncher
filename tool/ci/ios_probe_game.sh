@@ -119,6 +119,10 @@ else
   # 弹 GLFW error 65545 对话框退出 —— 这是 CI 硬件墙，不是启动器问题，
   # 有 GPU 的真 Mac 上这步能过。截图（弹窗）+ 这份留档即终局证据。
   system_profiler SPDisplaysDataType >"$SHOTS/host-gpu-info.txt" 2>&1 || true
+  # system_profiler 在某些 VM 上输出为空；空文件会让 gh release upload
+  # 撞 400 Bad Content-Length（2026-11-02 实测），兜一行。
+  [ -s "$SHOTS/host-gpu-info.txt" ] || echo "(system_profiler 无输出)" \
+    >"$SHOTS/host-gpu-info.txt"
   if grep -qi "GLFW error" "$LOG" 2>/dev/null; then
     echo "!! 窗口已建成但 GL 上下文失败（CI VM 无 OpenGL 渲染器，见弹窗截图）"
     grep -i "GLFW error" "$LOG" | head -3 || true

@@ -336,7 +336,10 @@ jobs:
                    build/shots/mod-console-content.log \
                    build/shots/mod-unified-log.txt; do
             if [ -f "$f" ]; then
-              gh release upload "$tag" "$f" --clobber || true
+              # uploads 域名偶发 400/超时，重试一次（上一轮 host-gpu-info
+              # 就被吞过一次）。
+              gh release upload "$tag" "$f" --clobber ||
+                gh release upload "$tag" "$f" --clobber || true
             fi
           done
 
