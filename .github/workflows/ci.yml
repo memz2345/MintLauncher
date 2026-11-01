@@ -248,8 +248,10 @@ jobs:
 
           shot home '{"themeMode":"light"}'
           shot settings '{"page":"settings","themeMode":"light"}'
-          # 长按返回键 → 系统层级菜单（等 3 秒自动弹出，截图时已展开）。
-          shot backmenu '{"page":"settings","themeMode":"light","showBackMenu":true}'
+          # 截图钩子只能拉起 Flutter 降级菜单（原生 UIContextMenuInteraction
+          # 没有公开的程序化弹出 API）；这张留给 iOS 14/15 降级对照。
+          shot backmenu-fallback \
+            '{"page":"settings","themeMode":"light","showBackMenu":true}'
           shot downloads '{"page":"downloads","themeMode":"light"}'
           shot dark '{"themeMode":"dark"}'
 
@@ -257,6 +259,27 @@ jobs:
           xcrun simctl spawn "$UDID" log show --last 15m \
             --predicate 'process == "Runner"' --style compact \
             > build/shots/unified-log.txt 2>&1 || true
+
+      # 原生返回键长按菜单截图：UIContextMenuInteraction 没有程序化弹出
+      # API，用 AXe 在模拟器坐标上真长按返回键（best-effort，装不上就跳过）。
+      - name: 原生返回菜单长按截图（AXe）
+        continue-on-error: true
+        run: |
+          set -e
+          UDID="${{ steps.sim.outputs.udid }}"
+          DATA=$(xcrun simctl get_app_container "$UDID" dev.mint.mint data)
+          printf '%s' '{"page":"settings","themeMode":"light"}' \
+            > "$DATA/Documents/mint_test_config.json"
+          xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
+          xcrun simctl launch "$UDID" dev.mint.mint >/dev/null 2>&1
+          sleep 10
+          brew tap cameroncooke/axe >/dev/null 2>&1 || true
+          brew install axe >/dev/null 2>&1 || true
+          axe tap -x 48 -y 140 --duration 1.2 --udid "$UDID" || true
+          sleep 2
+          xcrun simctl io "$UDID" screenshot \
+            build/shots/ios-backmenu-native.png || true
+          xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
 
       # 「试一下能不能启动游戏」第一性实验：模拟器的 dlopen 强制校验
       # Mach-O 平台标签，先把 macOS JRE 重打成 ios-simulator + 重签，

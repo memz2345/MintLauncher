@@ -767,36 +767,36 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   `--console-pty` 下确实到不了 Dart，页面 / 深色 / 长按返回菜单改为
   沙盒文件 `Documents/mint_test_config.json`（`services/test_hooks.dart`
   在 `main.dart` 启动时读取，正常构建没有这个文件就全不生效）。CI 现在
-  截 **5 个场景**：首页浅色、设置页、**长按返回层级菜单**、下载管理、
-  深色；截图与 `jvm_probe_result.txt` 同时传 artifact，并同步发到公开
-  Release [`ci-ios-shots`](https://github.com/memz2345/MintLauncher/releases/tag/ci-ios-shots)
+  截 **5 个常规场景**：首页浅色、设置页、Flutter 降级返回菜单、下载管理、
+  深色；另外用 **AXe** 在模拟器上真实长按原生返回键，截
+  `ios-backmenu-native.png`（UIContextMenuInteraction 没有程序化弹出 API，
+  只能真长按；best-effort）。截图与 `jvm_probe_result.txt` 同时传 artifact，
+  并同步发到公开 Release
+  [`ci-ios-shots`](https://github.com/memz2345/MintLauncher/releases/tag/ci-ios-shots)
   （artifact 下载要登录，Release 资产不用）。
-- **iOS 26 系统液态玻璃（2026-10-31 起）**：悬浮底栏 / 返回键接**系统自带**
-  Liquid Glass（`ios/Runner/GlassBridge.swift`，通道 `mint/ios_glass` +
-  平台视图 `mint/liquid_glass`）：
-  - **架构 = 平台视图垫底**：`UiKitView` 长在底栏 / 返回键的 Stack 最底层，
-    `UIGlassEffect` 糊的是 Flutter 里它**身后**的页面内容；图标 / 箭头由
-    Flutter 叠在平台视图之上。第一版把原生玻璃盖在 FlutterView 最上层，
-    图标被一起折射掉（截图实证）—— 平台视图才是正确姿势；
-  - 原生玻璃视图 `isUserInteractionEnabled = false`，拖动 / 点按照常走
-    Flutter；`UIGlassEffect` 用 **`NSClassFromString` 反射构造**，CI 的
-    Xcode 没带 iOS 26 SDK 也能编译；
-  - **必须用 `macos-26` runner**（Xcode 26 + iOS 26 模拟器 runtime）：
-    macos-15 是 iOS 18 runtime，探测如实降级为自绘毛玻璃胶囊；
-  - **顶栏玻璃圆片是可选的**（设置 → 外观 →「顶栏玻璃底」，默认开；
-    关掉就是裸图标）：返回键与所有 `MintTopBarAction` 共用同一个
-    `IosGlassCircle`（40×40 平台视图 + ClipOval，触摸穿透）。主开关
-    「液态玻璃底栏」同在（仅 iOS 显示）。
-  - **长按返回键 = 选择返回层级**（iOS 14+ 导航栏同款）：`MintWindowChrome`
-    记录 `PageRoute` 栈 + 页面标题，长按返回键时：
-    - **iOS 16+** 走原生 `UIEditMenuInteraction` 在按钮位置拉起系统 UIMenu
-      （`showBackMenu` 方法通道；当前层打勾置灰、更早的层可选），选择后
-      `onBackMenuSelected` 回传 index，Dart 侧 `popUntil` 到对应路由；
-    - **iOS 14/15** App 层没有公开 API 拉起 UIKit 导航栏的返回菜单，退回
-      Flutter 自绘同款（毛玻璃圆角面板 + 当前层打勾 + 层级标题），行为一致；
-    - 短按仍是普通 pop，长按带 `HapticFeedback.mediumImpact()`；
-    - 页面标题注册不再只在 Windows/Linux 托管标题栏时做（iOS/Android 也
-      注册，否则菜单只有「页面 2」这种兜底名）。
+- **iOS 26 原生液态玻璃（2026-11-01 重做）**：按 Apple 文档改用系统组件，
+  不再用「Flutter 自绘底栏 + 一层玻璃」冒充原生：
+  - **底栏 = `UITabBarController`**（`NativeTabBarBridge.swift`，通道仍为
+    `dev.mint.mint/liquid_bar`）：iOS 26 的浮动 Liquid Glass tab bar 由
+    `UITabBarController` 提供；**单独摆 `UITabBar` 不会正确采样滚动内容**
+    （Apple 论坛实证）。所以把控制器作为子控制器、只露出底部一条，SF
+    Symbols + 系统选中高亮 / 按压反馈 / 玻璃全部由 UIKit 负责；Flutter
+    只通过通道收 `onTabSelected`、发 `showBar/updateIndex/hideBar`。
+  - **返回键 = 原生平台视图**（`NativeBackButton.swift`，`mint/native_back_button`）：
+    `UIButton.Configuration.glass()` 系统玻璃按钮 + SF Symbol
+    **`chevron.backward`**（iOS 26 的返回图标，无横杠）。Flutter 只负责
+    布局和路由结果；点按 / 按压回弹 / 玻璃都是 UIKit 的。
+  - **长按返回层级菜单 = `UIContextMenuInteraction`**：挂在原生返回键上，
+    长按由 UIKit 弹系统 context menu（竖向、原生玻璃），当前层打勾置灰，
+    选择后回传 index → Dart `popUntil`。iOS 14/15 退回 Flutter 同款
+    毛玻璃面板（`back_stack_menu.dart`），行为一致。
+  - **iPad 宽屏 / iOS < 26** 仍用 Flutter 悬浮胶囊 + `UIGlassEffect`
+    平台视图（`GlassBridge.swift` / `IosGlassCircle`，文档里的自定义视图
+    用法），触摸穿透；顶栏「返回键玻璃底」开关同时控制操作按钮圆片。
+  - **必须用 `macos-26` runner**（Xcode 26 + iOS 26 模拟器 runtime）；
+    能力探测在 `main.dart` 里 `await`，首帧就有正确的原生组件。
+  - 页面标题注册不再只在 Windows/Linux 托管标题栏时做（iOS/Android 也
+    注册），原生菜单才能显示「首页 / 设置」这种真实层级名。
 - **iOS 起 JVM 探针（「试一下能不能启动游戏」第一性实验，CI 每轮执行）**：
   上一轮已实测：iOS 26 模拟器的 dlopen 强制校验平台标签，macOS 版
   libjvm 被拒（`incompatible platform (have 'macOS', need 'iOS-simulator')`）。
