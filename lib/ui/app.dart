@@ -47,6 +47,7 @@ import 'pages/settings_page.dart' show SettingsPage;
 import 'pages/theme_package_page.dart';
 import 'pages/shared_actions.dart' show activeVersionId, launchVersion;
 import 'pages/vanilla_versions_page.dart';
+import 'pages/version_content_page.dart';
 import 'pages/version_manager_page.dart';
 import 'pages/version_settings_page.dart';
 import 'package:mint/services/launcher/modloader.dart';
@@ -164,6 +165,9 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
     final route = switch (page) {
       'version_settings' when id != null => MaterialPageRoute<void>(
         builder: (_) => VersionSettingsPage(miuix: miuix, versionId: id),
+      ),
+      'content' when id != null => MaterialPageRoute<void>(
+        builder: (_) => VersionContentPage(miuix: miuix, versionId: id),
       ),
       'version_manager' => MaterialPageRoute<void>(
         builder: (_) => VersionManagerPage(miuix: miuix),

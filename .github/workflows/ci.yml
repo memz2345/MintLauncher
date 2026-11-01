@@ -276,6 +276,12 @@ jobs:
         timeout-minutes: 15
         run: bash tool/ci/ios_probe_game.sh "${{ steps.sim.outputs.udid }}"
 
+      # 「安装 Mod」探针：应用内真实 Modrinth 下载（sha1 校验）→ 版本 mods
+      # 目录，装完重拉「内容管理」页截图。先于游戏探针收起 game_probe.json。
+      - name: iOS 应用内安装 Mod（Modrinth → mods 目录）
+        timeout-minutes: 20
+        run: bash tool/ci/ios_mod_probe.sh "${{ steps.sim.outputs.udid }}"
+
       # 「试一下能不能启动游戏」第一性实验（同进程 dlopen JVM 路线）：
       # macOS JRE 重打 ios-simulator 平台标签后，JNI_CreateJavaVM 死在
       # libjava.dylib 硬编码的 macOS 框架路径 —— 本轮加依赖改写：
@@ -320,7 +326,10 @@ jobs:
                    build/shots/spawn-trace.log \
                    build/shots/spawn-file-test.txt \
                    build/shots/game-console.log \
-                   build/shots/game-launch-tail.log; do
+                   build/shots/game-launch-tail.log \
+                   build/shots/mod_probe_result.txt \
+                   build/shots/mod_probe_progress.txt \
+                   build/shots/mod-probe-mods-dir.txt; do
             if [ -f "$f" ]; then
               gh release upload "$tag" "$f" --clobber || true
             fi
