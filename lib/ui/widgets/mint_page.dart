@@ -192,11 +192,19 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
     if (Platform.isIOS) {
       final glass = _iosGlassBack(context);
       if (glass) {
-        back = GlassRegion(
-          id: 'back',
-          radius: 21,
-          enabled: true,
-          child: back,
+        back = SizedBox(
+          width: 40,
+          height: 40,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 可选玻璃底：系统液态玻璃圆片垫在箭头后面。
+              ClipOval(
+                child: GlassBackdrop(borderRadius: BorderRadius.circular(20)),
+              ),
+              Center(child: back),
+            ],
+          ),
         );
       }
     }

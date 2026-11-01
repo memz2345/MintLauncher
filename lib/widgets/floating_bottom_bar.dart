@@ -188,37 +188,51 @@ class _FloatingBottomBarState extends State<FloatingBottomBar>
           contentColor: Theme.of(context).colorScheme.onSurfaceVariant,
           activeContentColor: Theme.of(context).colorScheme.primary,
         );
-    // 系统玻璃：胶囊本身完全透明（底色 / 阴影 / 毛玻璃都交给原生
-    // UIGlassEffect），只画指示器与内容。
+    // 系统玻璃：胶囊本身完全透明（底色 / 阴影 / 毛玻璃都交给平台视图里的
+    // UIGlassEffect），指示器与内容叠在玻璃之上（平台视图是组件树里的
+    // 背景层，折射的是身后的页面内容，不会把图标糊掉）。
     final glass = widget.systemGlass && _glassActive;
+
+    final capsule = Material(
+      color: glass ? Colors.transparent : colors.containerColor,
+      // Stadium = 圆角 999 的胶囊（对应 Compose CircleShape pill）。
+      shape: const StadiumBorder(),
+      elevation: glass ? 0 : 6,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      // 毛玻璃：裁剪到胶囊范围内做实时背景模糊 —— Material 的半透明底色
+      // 在 filter 之前铺一层色调，模糊取到的就是「色调后的背景」，净效果
+      // 等价 miuix 顶栏的 blur + tint。
+      clipBehavior: !glass && widget.blurred ? Clip.antiAlias : Clip.none,
+      child: !glass && widget.blurred
+          ? BackdropFilter(
+              filter: ui.ImageFilter.blur(
+                sigmaX: widget.blurSigma,
+                sigmaY: widget.blurSigma,
+              ),
+              child: _content(colors),
+            )
+          : _content(colors),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: GlassRegion(
-        id: 'bottomBar',
-        radius: widget.height / 2,
-        enabled: glass,
-        child: Material(
-          color: glass ? Colors.transparent : colors.containerColor,
-          // Stadium = 圆角 999 的胶囊（对应 Compose CircleShape pill）。
-          shape: const StadiumBorder(),
-          elevation: glass ? 0 : 6,
-          shadowColor: Colors.black.withValues(alpha: 0.25),
-          // 毛玻璃：裁剪到胶囊范围内做实时背景模糊 —— Material 的半透明底色
-          // 在 filter 之前铺一层色调，模糊取到的就是「色调后的背景」，净效果
-          // 等价 miuix 顶栏的 blur + tint。
-          clipBehavior: !glass && widget.blurred ? Clip.antiAlias : Clip.none,
-          child: !glass && widget.blurred
-              ? BackdropFilter(
-                  filter: ui.ImageFilter.blur(
-                    sigmaX: widget.blurSigma,
-                    sigmaY: widget.blurSigma,
+      child: glass
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(widget.height / 2 + 4),
+              child: Stack(
+                fit: StackFit.passthrough,
+                children: [
+                  // 系统液态玻璃垫底（平台视图，触摸穿透）。
+                  Positioned.fill(
+                    child: GlassBackdrop(
+                      borderRadius: BorderRadius.circular(widget.height / 2),
+                    ),
                   ),
-                  child: _content(colors),
-                )
-              : _content(colors),
-        ),
-      ),
+                  capsule,
+                ],
+              ),
+            )
+          : capsule,
     );
   }
 
