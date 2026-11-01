@@ -38,6 +38,22 @@ class MintPageChrome {
   final List<Widget> actions;
 }
 
+/// 返回栈里的一层：长按返回键时，iOS 14+ 的「选择返回层级」菜单就是它。
+@immutable
+class MintBackTarget {
+  const MintBackTarget({
+    required this.title,
+    required this.route,
+    required this.current,
+  });
+
+  final String title;
+  final PageRoute<dynamic> route;
+
+  /// 当前所在页（菜单里打勾、不可点）。
+  final bool current;
+}
+
 /// 标题栏状态总线。
 ///
 /// 主应用的标题栏画在 Navigator **上面**（不属于任何页面），所以页面要
@@ -58,9 +74,48 @@ class MintWindowChrome extends ChangeNotifier {
   final Map<Route<dynamic>, MintPageChrome> _pages = {};
   bool _notifyScheduled = false;
 
+  /// 真正的页面路由栈（只收 [PageRoute]）。返回层级菜单靠它 + [_pages] 标题。
+  final List<PageRoute<dynamic>> _stack = <PageRoute<dynamic>>[];
+
   Route<dynamic>? get currentRoute => _route;
 
   MintPageChrome? get currentPage => _route == null ? null : _pages[_route];
+
+  List<PageRoute<dynamic>> get routeStack => List.unmodifiable(_stack);
+
+  /// 当前页及之前的层级（根 → 当前），给长按返回菜单用。
+  ///
+  /// 没有注册标题的页面（如根页 / 第三方路由）按位置兜底，菜单不会出现空白行。
+  List<MintBackTarget> get backTargets {
+    if (_stack.isEmpty) return const [];
+    final route = _route;
+    final currentIndex = route is PageRoute<dynamic>
+        ? _stack.indexOf(route)
+        : _stack.length - 1;
+    if (currentIndex < 0) return const [];
+    return [
+      for (var i = 0; i <= currentIndex; i++)
+        MintBackTarget(
+          title: _titleOf(_stack[i], i),
+          route: _stack[i],
+          current: i == currentIndex,
+        ),
+    ];
+  }
+
+  String _titleOf(PageRoute<dynamic> route, int index) {
+    final page = _pages[route];
+    if (page != null && page.title.isNotEmpty) return page.title;
+    if (index == 0) return '首页';
+    return '页面 ${index + 1}';
+  }
+
+  void _pushStack(PageRoute<dynamic> route) {
+    _stack.remove(route);
+    _stack.add(route);
+  }
+
+  void _removeStack(PageRoute<dynamic> route) => _stack.remove(route);
 
   void setCurrentRoute(Route<dynamic>? route) {
     if (identical(route, _route)) return;
@@ -94,6 +149,7 @@ class MintWindowChrome extends ChangeNotifier {
   void reset() {
     _route = null;
     _pages.clear();
+    _stack.clear();
     notifyListeners();
   }
 
@@ -111,32 +167,45 @@ class MintWindowChrome extends ChangeNotifier {
 class MintNavigatorObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (route is PageRoute) MintWindowChrome.instance.setCurrentRoute(route);
+    if (route is! PageRoute) return;
+    final chrome = MintWindowChrome.instance;
+    chrome._pushStack(route);
+    chrome.setCurrentRoute(route);
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (route is! PageRoute) return;
-    MintWindowChrome.instance.setCurrentRoute(
-      previousRoute is PageRoute ? previousRoute : null,
-    );
+    final chrome = MintWindowChrome.instance;
+    chrome._removeStack(route);
+    chrome.setCurrentRoute(previousRoute is PageRoute ? previousRoute : null);
   }
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (route is! PageRoute) return;
-    if (identical(MintWindowChrome.instance.currentRoute, route)) {
-      MintWindowChrome.instance.setCurrentRoute(
-        previousRoute is PageRoute ? previousRoute : null,
-      );
+    final chrome = MintWindowChrome.instance;
+    chrome._removeStack(route);
+    if (identical(chrome.currentRoute, route)) {
+      chrome.setCurrentRoute(previousRoute is PageRoute ? previousRoute : null);
     }
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    if (newRoute is PageRoute) {
-      MintWindowChrome.instance.setCurrentRoute(newRoute);
+    if (newRoute is! PageRoute) return;
+    final chrome = MintWindowChrome.instance;
+    if (oldRoute is PageRoute) {
+      final index = chrome._stack.indexOf(oldRoute);
+      if (index >= 0) {
+        chrome._stack[index] = newRoute;
+      } else {
+        chrome._pushStack(newRoute);
+      }
+    } else {
+      chrome._pushStack(newRoute);
     }
+    chrome.setCurrentRoute(newRoute);
   }
 }
 

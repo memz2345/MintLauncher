@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
@@ -22,11 +21,16 @@ class IosLiquidGlass {
 
   bool _probed = false;
   bool _available = false;
+  bool _backMenuNative = false;
+  num _iosVersion = 0;
+
+  /// 原生侧长按返回菜单选中了一层。
+  void Function(int index)? onBackMenuSelected;
 
   /// 探测结果缓存（未探测时为 null）。组件同步取用；探测在应用启动时做。
   bool? get cachedAvailable => _probed ? _available : null;
 
-  /// 探测结果缓存（iOS 26+ 才有 UIGlassEffect）。
+  /// iOS 26+ 才有 UIGlassEffect。
   Future<bool> available() async {
     if (!Platform.isIOS) return false;
     if (_probed) return _available;
@@ -36,18 +40,73 @@ class IosLiquidGlass {
         'getCapabilities',
       );
       _available = caps?['liquidGlass'] == true;
-      debugPrint('IosLiquidGlass available=$_available (UIGlassEffect 探测)');
+      _backMenuNative = caps?['backMenu'] == true;
+      _iosVersion = (caps?['iosVersion'] as num?) ?? 0;
+      debugPrint(
+        'IosLiquidGlass available=$_available '
+        'backMenu=$_backMenuNative ios=$_iosVersion',
+      );
     } catch (e) {
       debugPrint('IosLiquidGlass caps failed: $e');
       _available = false;
+      _backMenuNative = false;
     }
     return _available;
+  }
+
+  /// 长按返回键的层级菜单能否交给系统（iOS 16+ 的 UIEditMenuInteraction）。
+  ///
+  /// iOS 14/15 的系统长按菜单只有 UIKit 导航栏内部的私有路径能拉起，App 层
+  /// 没有公开 API；这两代由 Flutter 自绘同款菜单兜底（行为一致，观感稍简化）。
+  bool? get cachedBackMenuNative => _probed ? _backMenuNative : null;
+
+  /// 在 [anchor]（Flutter 全局逻辑像素）处弹原生返回层级菜单。
+  ///
+  /// 返回 false 表示原生不可用（非 iOS / iOS 16 以下 / 无 key window），
+  /// 调用方退回 Flutter 自绘菜单。
+  Future<bool> showBackMenu({
+    required List<String> titles,
+    required int currentIndex,
+    required Offset anchor,
+  }) async {
+    if (!Platform.isIOS || titles.isEmpty) return false;
+    if (cachedBackMenuNative != true) return false;
+    try {
+      final ok = await _channel.invokeMethod<bool>('showBackMenu', {
+        'titles': titles,
+        'currentIndex': currentIndex,
+        'anchor': [anchor.dx, anchor.dy],
+      });
+      return ok == true;
+    } catch (e) {
+      debugPrint('IosLiquidGlass showBackMenu failed: $e');
+      return false;
+    }
+  }
+
+  bool _handlerInstalled = false;
+
+  void ensureHandler() {
+    if (_handlerInstalled) return;
+    _handlerInstalled = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onBackMenuSelected') {
+        final args = call.arguments;
+        final index = args is Map ? (args['index'] as num?)?.toInt() : null;
+        if (index != null) onBackMenuSelected?.call(index);
+      }
+      return null;
+    });
   }
 
   /// 测试用。
   void reset() {
     _probed = false;
     _available = false;
+    _backMenuNative = false;
+    _iosVersion = 0;
+    onBackMenuSelected = null;
+    _handlerInstalled = false;
   }
 }
 
@@ -65,5 +124,33 @@ class GlassBackdrop extends StatelessWidget {
     final view = const UiKitView(viewType: 'mint/liquid_glass');
     if (borderRadius == null) return view;
     return ClipRRect(borderRadius: borderRadius!, child: view);
+  }
+}
+
+/// 顶栏圆形动作（返回键 / 操作按钮）的原生玻璃底盘。
+///
+/// 交互全部交给上面的 Flutter 按钮（原生玻璃视图触摸穿透），所以长按 /
+/// 水波 / 语义都不受影响。
+class IosGlassCircle extends StatelessWidget {
+  const IosGlassCircle({super.key, required this.child, this.size = 40});
+
+  final Widget child;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipOval(
+            child: GlassBackdrop(borderRadius: BorderRadius.circular(size / 2)),
+          ),
+          Center(child: child),
+        ],
+      ),
+    );
   }
 }

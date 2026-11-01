@@ -38,8 +38,9 @@ class IosJvmProbe {
 
   static void _append(String docsPath, String line) {
     try {
-      File(p.join(docsPath, 'jvm_probe_result.txt'))
-          .writeAsStringSync('$line\n', mode: FileMode.append);
+      File(
+        p.join(docsPath, 'jvm_probe_result.txt'),
+      ).writeAsStringSync('$line\n', mode: FileMode.append);
     } catch (_) {}
   }
 
@@ -48,20 +49,28 @@ class IosJvmProbe {
     final buf = StringBuffer();
     buf.writeln('=== iOS JVM probe ${DateTime.now().toIso8601String()} ===');
     try {
-      // ── 1. 查 Adoptium 的 macOS arm64 JRE ──
-      buf.writeln('[1] 查询 Adoptium JRE 21 (mac/aarch64)...');
-      final link = await _fetchJreLink(21);
-      buf.writeln('    $link');
+      // ── 1. 预置 JRE（CI 把 macOS JRE 重打成 ios-simulator 平台标签 +
+      //    重签后塞进沙盒）优先；没有就走原来的 macOS 下载（平台校验必挂，
+      //    保留这条路径是为了拿到「没打标签时」的对照错误）。
+      String home;
+      final staged = p.join(docsPath, 'jvm_ios_sim');
+      if (File(p.join(staged, 'lib', 'server', 'libjvm.dylib')).existsSync()) {
+        home = staged;
+        buf.writeln('[1] 使用 CI 预置的 iOS-simulator 重签 JRE');
+        buf.writeln('    java.home=$home');
+      } else {
+        buf.writeln('[1] 查询 Adoptium JRE 21 (mac/aarch64)...');
+        final link = await _fetchJreLink(21);
+        buf.writeln('    $link');
 
-      // ── 2. 下载 ──
-      final tarPath = p.join(docsPath, 'jre21-mac.tar.gz');
-      buf.writeln('[2] 下载到 ${p.basename(tarPath)}...');
-      await _download(link, tarPath, buf);
+        final tarPath = p.join(docsPath, 'jre21-mac.tar.gz');
+        buf.writeln('[2] 下载到 ${p.basename(tarPath)}...');
+        await _download(link, tarPath, buf);
 
-      // ── 3. 解压（手动逐条写，顺带打印清单定位问题）──
-      buf.writeln('[3] 解压...');
-      final home = _extractSync(tarPath, p.join(docsPath, 'jvm_probe'), buf);
-      buf.writeln('    java.home=$home');
+        buf.writeln('[3] 解压...');
+        home = _extractSync(tarPath, p.join(docsPath, 'jvm_probe'), buf);
+        buf.writeln('    java.home=$home');
+      }
 
       // ── 4. dlopen libjvm ──
       final libjvm = p.join(home, 'lib', 'server', 'libjvm.dylib');
@@ -111,23 +120,33 @@ class IosJvmProbe {
       final env = envOut.value;
       final table = env
           .cast<Pointer<NativeFunction<Int32 Function(Pointer<Void>)>>>();
-      final getVersion = table[4]
-          .asFunction<int Function(Pointer<Void>)>();
+      final getVersion = table[4].asFunction<int Function(Pointer<Void>)>();
       final jniVersion = getVersion(env);
       buf.writeln(
         '[6] JNIEnv->GetVersion() = 0x${jniVersion.toRadixString(16)} '
         '(JNI ${jniVersion >> 16}.${jniVersion & 0xFFFF})',
       );
 
-      // ── 7. JavaVM 函数表 DestroyJavaVM（index 3）正常收摊 ──
+      // ── 7. 真正跑一段 Java：System.getProperty("java.version") ──
+      // 只证明「虚拟机对象起来了」不够；能走 JNI 调进 Java 标准库，
+      // 才说明这个 iOS-simulator JRE 是可用的。
+      try {
+        buf.writeln('[7] System.getProperty(java.version / java.vm.name)');
+        buf.writeln('    java.version=${_javaProperty(env, 'java.version')}');
+        buf.writeln('    java.vm.name=${_javaProperty(env, 'java.vm.name')}');
+      } catch (e) {
+        buf.writeln('!! [7] Java 属性读取失败: $e');
+      }
+
+      // ── 8. JavaVM 函数表 DestroyJavaVM（index 3）正常收摊 ──
       final vm = vmOut.value;
       final vmTable = vm
           .cast<Pointer<NativeFunction<Int32 Function(Pointer<Void>)>>>();
       final destroy = vmTable[3].asFunction<int Function(Pointer<Void>)>();
       final drc = destroy(vm);
-      buf.writeln('[7] DestroyJavaVM rc=$drc');
-      buf.writeln('== ✅ 应用内起 JVM 成功（iOS 模拟器）——启动游戏的');
-      buf.writeln('   下一环是 LWJGL + MC 主类调用，见 README iOS 章节 ==');
+      buf.writeln('[8] DestroyJavaVM rc=$drc');
+      buf.writeln('== ✅ 应用内起 JVM 并执行 Java 代码成功（iOS 模拟器）==');
+      buf.writeln('   下一环是 LWJGL 图形后端 / MC 主类，见 README iOS 章节');
     } catch (e, st) {
       buf.writeln('!! 失败: $e');
       buf.writeln('== ❌ 探针失败 ==');
@@ -140,10 +159,154 @@ class IosJvmProbe {
     } catch (_) {}
     // 大文件不留着占沙盒。
     try {
-      Directory(p.join(docsPath, 'jvm_probe'))
-          .deleteSync(recursive: true);
+      Directory(p.join(docsPath, 'jvm_probe')).deleteSync(recursive: true);
       File(p.join(docsPath, 'jre21-mac.tar.gz')).deleteSync();
     } catch (_) {}
+  }
+
+  /// 走 JNI 调 `System.getProperty(key)`，返回 Java 字符串。
+  ///
+  /// 函数表索引见 JNI 规范：FindClass=6、GetStaticMethodID=113、
+  /// CallStaticObjectMethodA=116、NewStringUTF=167、GetStringUTFChars=169、
+  /// ReleaseStringUTFChars=170、ExceptionOccurred=15、ExceptionClear=17
+  ///（16 是 ExceptionDescribe，别用错）。
+  static String _javaProperty(Pointer<Void> env, String key) {
+    final findClass = env
+        .cast<
+          Pointer<
+            NativeFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>
+          >
+        >()[6]
+        .asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>();
+    final getStaticMethodId = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Void> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Utf8>,
+                Pointer<Utf8>,
+              )
+            >
+          >
+        >()[113]
+        .asFunction<
+          Pointer<Void> Function(
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+          )
+        >();
+    final newStringUtf = env
+        .cast<
+          Pointer<
+            NativeFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>
+          >
+        >()[167]
+        .asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>();
+    final callStaticObjectA = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Void> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+              )
+            >
+          >
+        >()[116]
+        .asFunction<
+          Pointer<Void> Function(
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Void>,
+          )
+        >();
+    final getStringUtfChars = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Utf8> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+              )
+            >
+          >
+        >()[169]
+        .asFunction<
+          Pointer<Utf8> Function(Pointer<Void>, Pointer<Void>, Pointer<Void>)
+        >();
+    final releaseStringUtfChars = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Void Function(Pointer<Void>, Pointer<Void>, Pointer<Utf8>)
+            >
+          >
+        >()[170]
+        .asFunction<
+          void Function(Pointer<Void>, Pointer<Void>, Pointer<Utf8>)
+        >();
+    final exceptionOccurred = env
+        .cast<
+          Pointer<NativeFunction<Pointer<Void> Function(Pointer<Void>)>>
+        >()[15]
+        .asFunction<Pointer<Void> Function(Pointer<Void>)>();
+    final exceptionClear = env
+        .cast<Pointer<NativeFunction<Void Function(Pointer<Void>)>>>()[17]
+        .asFunction<void Function(Pointer<Void>)>();
+
+    void checkException() {
+      final exc = exceptionOccurred(env);
+      if (exc != nullptr) {
+        exceptionClear(env);
+        throw 'JNI exception（属性 $key）';
+      }
+    }
+
+    final systemName = 'java/lang/System'.toNativeUtf8();
+    final methodName = 'getProperty'.toNativeUtf8();
+    final signature = '(Ljava/lang/String;)Ljava/lang/String;'.toNativeUtf8();
+    final keyJava = key.toNativeUtf8();
+    Pointer<Void> systemClass = nullptr;
+    Pointer<Void> methodId = nullptr;
+    Pointer<Void> javaKey = nullptr;
+    Pointer<Void> value = nullptr;
+    Pointer<Uint64> arg = nullptr;
+    Pointer<Utf8> chars = nullptr;
+    try {
+      systemClass = findClass(env, systemName);
+      checkException();
+      if (systemClass == nullptr) throw 'FindClass(java/lang/System) 返回 null';
+      methodId = getStaticMethodId(env, systemClass, methodName, signature);
+      checkException();
+      if (methodId == nullptr) throw 'GetStaticMethodID 返回 null';
+      javaKey = newStringUtf(env, keyJava);
+      checkException();
+      if (javaKey == nullptr) throw 'NewStringUTF 返回 null';
+      // jvalue 是 8 字节 union；第一个成员就是对象指针。
+      arg = calloc<Uint64>();
+      arg.value = javaKey.address;
+      value = callStaticObjectA(env, systemClass, methodId, arg.cast<Void>());
+      checkException();
+      if (value == nullptr) throw 'System.getProperty($key) 返回 null';
+      chars = getStringUtfChars(env, value, nullptr);
+      if (chars == nullptr) throw 'GetStringUTFChars 返回 null';
+      return chars.toDartString();
+    } finally {
+      if (chars != nullptr) releaseStringUtfChars(env, value, chars);
+      if (arg != nullptr) calloc.free(arg);
+      calloc.free(systemName);
+      calloc.free(methodName);
+      calloc.free(signature);
+      calloc.free(keyJava);
+    }
   }
 
   static Future<String> _fetchJreLink(int major) async {
@@ -159,15 +322,20 @@ class IosJvmProbe {
       final body = await res.transform(utf8.decoder).join();
       final list = jsonDecode(body) as List<dynamic>;
       if (list.isEmpty) throw 'Adoptium 无结果';
-      final binary = (list.first as Map<String, dynamic>)['binary']
-          as Map<String, dynamic>;
+      final binary =
+          (list.first as Map<String, dynamic>)['binary']
+              as Map<String, dynamic>;
       return (binary['package'] as Map<String, dynamic>)['link'] as String;
     } finally {
       client.close();
     }
   }
 
-  static Future<void> _download(String url, String dest, StringBuffer buf) async {
+  static Future<void> _download(
+    String url,
+    String dest,
+    StringBuffer buf,
+  ) async {
     final client = HttpClient();
     try {
       final req = await client.getUrl(Uri.parse(url));
@@ -218,11 +386,7 @@ class IosJvmProbe {
     if (home == null) {
       final root = Directory(destRoot);
       final listing = root.existsSync()
-          ? root
-                .listSync()
-                .map((e) => p.basename(e.path))
-                .take(20)
-                .join(', ')
+          ? root.listSync().map((e) => p.basename(e.path)).take(20).join(', ')
           : '(目录不存在)';
       buf.writeln('    destRoot 顶层: $listing');
       throw '解压后没找到 Contents/Home';

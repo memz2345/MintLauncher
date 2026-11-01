@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +12,7 @@ import 'package:mint/ui/pages/common.dart' show MintSnackScope;
 import 'package:mint/services/window_backdrop.dart';
 import 'package:mint/ui/mint_icons.dart';
 import 'package:mint/ui/window_chrome.dart';
+import 'package:mint/ui/widgets/back_stack_menu.dart';
 import 'package:mint/ui/widgets/mint_progressive_band.dart';
 import 'package:mint/ui/widgets/page_background.dart';
 import 'package:mint/ui/widgets/top_bar_tone.dart';
@@ -94,6 +96,9 @@ class MintPageScaffold extends StatefulWidget {
 }
 
 class _MintPageScaffoldState extends State<MintPageScaffold> {
+  /// 长按返回键时用来量锚点位置（原生菜单要贴着按钮弹）。
+  final GlobalKey _backButtonKey = GlobalKey(debugLabel: 'mint-back-button');
+
   /// miuix 折叠行为：大标题页 + 所有二级页（miuix 下二级页也会升级为大标题）。
   /// 用项目版子类而不是包版：短页面（内容不满一屏）只要被拖进标题栏区域就该
   /// 折叠，包版按滚动位置记账，那种页面永远记不到账。
@@ -179,8 +184,7 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
   Widget? _resolvedLeading(BuildContext context) {
     if (widget.leading != null) return widget.leading;
     if (!widget.showBack) return null;
-    // iOS 26 液态玻璃:返回键的玻璃底**可选**(设置里关掉就是裸箭头)。
-    // 区域由 GlassRegion 实测上报;探测结果在启动时缓存。
+    // 玻璃圆底由 MintTopBarAction 统一铺（设置里关掉就是裸箭头）。
     Widget back = MintTopBarAction(
       miuix: mintMiuixOf(context),
       tooltip: '返回',
@@ -190,57 +194,42 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
       onPressed: () => Navigator.of(context).maybePop(),
     );
     if (Platform.isIOS) {
-      final glass = _iosGlassBack(context);
-      if (glass) {
-        back = SizedBox(
-          width: 40,
-          height: 40,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 可选玻璃底：系统液态玻璃圆片垫在箭头后面。
-              ClipOval(
-                child: GlassBackdrop(borderRadius: BorderRadius.circular(20)),
-              ),
-              Center(child: back),
-            ],
-          ),
-        );
-      }
+      // iOS 14+ 导航栏同款：长按返回键弹出层级菜单。放在按钮外层做手势，
+      // 点按仍归 IconButton / MiuixIconButton（短按 pop）。
+      back = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          final box =
+              _backButtonKey.currentContext?.findRenderObject() as RenderBox?;
+          final anchor = box == null
+              ? null
+              : box.localToGlobal(box.size.center(Offset.zero));
+          showMintBackStackMenu(context, anchor: anchor);
+        },
+        child: KeyedSubtree(key: _backButtonKey, child: back),
+      );
     }
     return back;
-  }
-
-  /// 返回键玻璃底开关（iOS 26 且主开关开着才生效）。极简测试环境没有
-  /// [SettingsService] 时按默认值（开）走。
-  bool _iosGlassBack(BuildContext context) {
-    try {
-      final settings = context.read<SettingsService>();
-      if (!settings.iosLiquidGlass || !settings.iosGlassBackBackground) {
-        return false;
-      }
-      return IosLiquidGlass.instance.cachedAvailable == true;
-    } catch (_) {
-      return false;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final hosted = _hostedInWindow;
     final route = _route;
-    if (hosted && route != null) {
+    // 标题注册不再只在「托管到窗口标题栏」时做：iOS / Android 虽然没有
+    // 自绘标题栏，但长按返回键的层级菜单需要页面标题（MintBackTarget）。
+    if (route != null) {
       MintWindowChrome.instance.setPage(
         route,
         MintPageChrome(
           title: widget.title,
           showBack: widget.showBack,
-          actions: widget.actions,
+          actions: hosted ? widget.actions : const <Widget>[],
         ),
       );
       _registeredInTitleBar = true;
-    } else if (_registeredInTitleBar && route != null) {
-      MintWindowChrome.instance.removePage(route);
+    } else if (_registeredInTitleBar) {
       _registeredInTitleBar = false;
     }
 
@@ -568,20 +557,35 @@ class MintTopBarAction extends StatelessWidget {
       );
     }
     final content = child ?? Icon(icon, size: 22);
-    if (miuix) {
-      return MiuixIconButton(onPressed: onPressed, child: content);
+    final Widget button = miuix
+        ? MiuixIconButton(onPressed: onPressed, child: content)
+        // 顶栏可能被托管到 Navigator 之上的自绘窗口标题栏（那里没有 Overlay，
+        // 带 tooltip 的 IconButton 会 assert）；用 Semantics 保留可访问名称。
+        : Semantics(
+            label: tooltip,
+            button: true,
+            child: IconButton(
+              onPressed: onPressed,
+              icon: content,
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+
+    // iOS 26：返回键与所有顶栏操作按钮都铺同一块系统玻璃圆片。
+    // 玻璃视图是垫底的平台视图，点击 / 长按仍走上面的 Flutter 按钮。
+    if (Platform.isIOS) {
+      try {
+        final settings = context.read<SettingsService>();
+        if (settings.iosLiquidGlass &&
+            settings.iosGlassBackBackground &&
+            IosLiquidGlass.instance.cachedAvailable == true) {
+          return IosGlassCircle(child: button);
+        }
+      } catch (_) {
+        // 极简测试环境没有 SettingsService：不铺玻璃。
+      }
     }
-    // 顶栏可能被托管到 Navigator 之上的自绘窗口标题栏（那里没有 Overlay，
-    // 带 tooltip 的 IconButton 会 assert）；用 Semantics 保留可访问名称。
-    return Semantics(
-      label: tooltip,
-      button: true,
-      child: IconButton(
-        onPressed: onPressed,
-        icon: content,
-        visualDensity: VisualDensity.compact,
-      ),
-    );
+    return button;
   }
 }
 

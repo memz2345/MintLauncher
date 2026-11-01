@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/liquid_glass_bar_service.dart';
 import 'package:mint/services/settings_service.dart';
+import 'package:mint/services/test_hooks.dart';
 import 'package:mint/services/theme_fonts.dart';
 import 'package:mint/services/theme_package.dart';
 import 'package:mint/services/volume_bar_service.dart';
@@ -23,6 +24,7 @@ import 'package:mint/ui/miuix/miuix_material_bridge.dart';
 import 'package:mint/ui/miuix/miuix_home_shell.dart';
 import 'package:mint/ui/mint_icons.dart';
 import 'package:mint/ui/window_chrome.dart';
+import 'package:mint/ui/widgets/back_stack_menu.dart';
 import 'package:mint/widgets/edge_scroll_haptic.dart';
 import 'package:mint/widgets/global_shortcuts.dart';
 import 'package:mint/widgets/mdui_ripple.dart'
@@ -104,16 +106,33 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
         );
       }
     }
-    // 截图/回归钩子：优先 dart-define，CI 冒烟再用同名环境变量
-    // （一个二进制反复拉起就能截不同页面，不用重编）。
-    final testPage =
-        const String.fromEnvironment('MINT_TEST_PAGE').isNotEmpty
-        ? const String.fromEnvironment('MINT_TEST_PAGE')
-        : (Platform.environment['MINT_TEST_PAGE'] ?? '');
+    // 截图/回归钩子：优先沙盒配置（iOS simctl 的环境变量不进场），
+    // 其次 dart-define，桌面 CI 再用同名环境变量。
+    final testPage = MintTestHooks.page.isNotEmpty
+        ? MintTestHooks.page
+        : (const String.fromEnvironment('MINT_TEST_PAGE').isNotEmpty
+              ? const String.fromEnvironment('MINT_TEST_PAGE')
+              : (Platform.environment['MINT_TEST_PAGE'] ?? ''));
     if (testPage.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _openTestPage(testPage),
       );
+    }
+    if (MintTestHooks.showBackMenu) {
+      // 等二级页推入 / 首帧稳定后再弹，截图时菜单已经展开。
+      Future<void>.delayed(const Duration(seconds: 3), () {
+        // Navigator 自己的 context 不是 Navigator 的后代，Navigator.of()
+        // 找不到它；用 Overlay 的 context（在 Navigator 里面）。
+        final navContext = _navigatorKey.currentState?.overlay?.context;
+        if (!mounted || navContext == null) return;
+        showMintBackStackMenu(
+          navContext,
+          anchor: Offset(24, MediaQuery.paddingOf(navContext).top + 28),
+          preferNative: Platform.isIOS,
+        ).catchError((Object e, StackTrace st) {
+          debugPrint('back menu hook failed: $e\n$st');
+        });
+      });
     }
     if (_kTestLaunchVersion.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _runLaunchHook());
@@ -253,9 +272,7 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
   /// 关掉时原生会反注册广播，不留监听。
   void _syncVolumeBarHud(SettingsService settings, MintTheme? theme) {
     final on =
-        Platform.isAndroid &&
-        settings.volumeUseThemeBar &&
-        theme != null;
+        Platform.isAndroid && settings.volumeUseThemeBar && theme != null;
     if (on == _volumeHudOn) return;
     _volumeHudOn = on;
     MintVolumeBar.setListening(on);
@@ -759,7 +776,10 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
         // 应用内音量条：按音量键时盖一层主题的音量柱（IgnorePointer，不挡交互）。
         if (_volumeHudOn) {
           content = Stack(
-            children: [content, const Positioned.fill(child: ThemeVolumeBar())],
+            children: [
+              content,
+              const Positioned.fill(child: ThemeVolumeBar()),
+            ],
           );
         }
         if (MintWindowChrome.instance.enabled) {

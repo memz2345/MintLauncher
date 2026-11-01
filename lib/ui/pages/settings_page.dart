@@ -743,8 +743,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 SwitchRow(
                   miuix: miuix,
                   icon: Icons.arrow_back_outlined,
-                  title: '返回键玻璃底',
-                  subtitle: '可选：返回箭头后面铺一块系统玻璃圆底，关掉是裸箭头',
+                  title: '顶栏玻璃底',
+                  subtitle: '返回键 / 顶栏操作按钮后面铺系统玻璃圆片；'
+                      '长按返回键可选择返回层级（iOS 14+）',
                   value: settings.iosGlassBackBackground,
                   // 主开关关了这里就没意义：置灰。
                   onChanged: settings.iosLiquidGlass

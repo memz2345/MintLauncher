@@ -763,11 +763,14 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   126MB 不进仓库）下载主题包塞进沙盒 `Documents/import_theme.mtz`，
   应用启动时标记文件钩子自动导入并删除 —— 主题壁纸 / 主色染色 / 玻璃
   底栏的效果截图见 artifact。
-  **已知限制**：`SIMCTL_CHILD_*` 环境变量在 CI 的 launch 路径下没有到达
-  Dart 进程 —— 页面跳转（`MINT_TEST_PAGE`）与强制深色（`MINT_THEME_MODE`）
-  两个截图钩子在 iOS 上未生效，四张截的都是首页浅色；应用本体渲染、
-  数据目录（沙盒 Documents）均正常。待查 simctl 环境转发或改用
-  Dart VM service 注入。
+  **截图场景钩子（2026-11-01 修复）**：`SIMCTL_CHILD_*` 在
+  `--console-pty` 下确实到不了 Dart，页面 / 深色 / 长按返回菜单改为
+  沙盒文件 `Documents/mint_test_config.json`（`services/test_hooks.dart`
+  在 `main.dart` 启动时读取，正常构建没有这个文件就全不生效）。CI 现在
+  截 **5 个场景**：首页浅色、设置页、**长按返回层级菜单**、下载管理、
+  深色；截图与 `jvm_probe_result.txt` 同时传 artifact，并同步发到公开
+  Release [`ci-ios-shots`](https://github.com/memz2345/MintLauncher/releases/tag/ci-ios-shots)
+  （artifact 下载要登录，Release 资产不用）。
 - **iOS 26 系统液态玻璃（2026-10-31 起）**：悬浮底栏 / 返回键接**系统自带**
   Liquid Glass（`ios/Runner/GlassBridge.swift`，通道 `mint/ios_glass` +
   平台视图 `mint/liquid_glass`）：
@@ -780,17 +783,33 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
     Xcode 没带 iOS 26 SDK 也能编译；
   - **必须用 `macos-26` runner**（Xcode 26 + iOS 26 模拟器 runtime）：
     macos-15 是 iOS 18 runtime，探测如实降级为自绘毛玻璃胶囊；
-  - **返回键的玻璃底是可选的**（设置 → 外观 →「返回键玻璃底」，默认开；
-    关掉就是裸返回箭头）。主开关「液态玻璃底栏」同在（仅 iOS 显示）。
+  - **顶栏玻璃圆片是可选的**（设置 → 外观 →「顶栏玻璃底」，默认开；
+    关掉就是裸图标）：返回键与所有 `MintTopBarAction` 共用同一个
+    `IosGlassCircle`（40×40 平台视图 + ClipOval，触摸穿透）。主开关
+    「液态玻璃底栏」同在（仅 iOS 显示）。
+  - **长按返回键 = 选择返回层级**（iOS 14+ 导航栏同款）：`MintWindowChrome`
+    记录 `PageRoute` 栈 + 页面标题，长按返回键时：
+    - **iOS 16+** 走原生 `UIEditMenuInteraction` 在按钮位置拉起系统 UIMenu
+      （`showBackMenu` 方法通道；当前层打勾置灰、更早的层可选），选择后
+      `onBackMenuSelected` 回传 index，Dart 侧 `popUntil` 到对应路由；
+    - **iOS 14/15** App 层没有公开 API 拉起 UIKit 导航栏的返回菜单，退回
+      Flutter 自绘同款（毛玻璃圆角面板 + 当前层打勾 + 层级标题），行为一致；
+    - 短按仍是普通 pop，长按带 `HapticFeedback.mediumImpact()`；
+    - 页面标题注册不再只在 Windows/Linux 托管标题栏时做（iOS/Android 也
+      注册，否则菜单只有「页面 2」这种兜底名）。
 - **iOS 起 JVM 探针（「试一下能不能启动游戏」第一性实验，CI 每轮执行）**：
-  模拟器进程跑在 macOS 上、允许 JIT，`ios_jvm_probe.dart` 用 FFI 下载
-  Temurin macOS arm64 JRE → 解压 → `dlopen libjvm.dylib` →
-  `JNI_CreateJavaVM`。**实测结论：iOS 26 模拟器的 dlopen 强制校验平台
-  标签，macOS 版 libjvm 被拒**（`incompatible platform (have 'macOS',
-  need 'iOS-simulator')`）—— 想在模拟器上真跑游戏，需要把 OpenJDK 按
-  **iOS-simulator 平台目标**重新编译（这条路 JIT 全速可用，社区尚无
-  现成产物）；**真机**仍是 Pojav 路线（设备版 OpenJDK + JIT 特权 +
-  MetalANGLE 渲染）。探针每轮把证据写进 artifact `jvm_probe_result.txt`。
+  上一轮已实测：iOS 26 模拟器的 dlopen 强制校验平台标签，macOS 版
+  libjvm 被拒（`incompatible platform (have 'macOS', need 'iOS-simulator')`）。
+  本轮 `tool/ci/ios_jvm_probe.sh` 换路线：下载 Temurin macOS arm64 JRE →
+  用 `vtool` 把 JRE 里所有 Mach-O 的 `LC_BUILD_VERSION` 重打成
+  **ios-simulator** → `codesign -s -` 重签 → 塞进沙盒 → 应用内 FFI
+  `dlopen` + `JNI_CreateJavaVM` + 经 JNI 调 `System.getProperty("java.version")`
+  （证明不只是虚拟机对象起来，Java 标准库代码真的能执行）。
+  **结论分层**：JVM 能在模拟器里起来 ≠ 游戏能启动 —— Minecraft 还需要
+  LWJGL/GLFW 的图形窗口后端（iOS 没有 macOS AppKit 那套 NSWindow），
+  所以**游戏本体仍不能启动**；真机仍是 Pojav 路线（设备版 OpenJDK +
+  JIT 特权 + MetalANGLE 渲染）。每轮证据写进
+  `build/shots/jvm_probe_result.txt`（artifact + Release）。
 - **iOS 启动游戏 = 明确降级**：`GameLaunchSupport`（lib/services/launcher/
   launch_support.dart）统一平台能力表 —— iOS 沙盒禁 fork/exec，未接
   OpenJDK（Pojav 路线）前启动入口直接弹三风格说明框（OpenJDK 同进程

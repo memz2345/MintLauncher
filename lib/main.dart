@@ -23,6 +23,7 @@ import 'package:mint/services/launcher/ios_jvm_probe.dart' show IosJvmProbe;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
 import 'package:mint/services/settings_service.dart';
+import 'package:mint/services/test_hooks.dart';
 import 'package:mint/services/theme_fonts.dart';
 import 'package:mint/services/theme_package.dart';
 import 'package:mint/services/vtouch/vtouch_overlay_service.dart';
@@ -187,7 +188,26 @@ Future<void> main(List<String> args) async {
       if (marker.existsSync()) {
         testTheme = marker.path;
       }
+      // CI 截图配置：simctl 的环境变量不进场，改用沙盒文件。
+      final config = File(p.join(iosDocsPath, 'mint_test_config.json'));
+      if (config.existsSync()) {
+        try {
+          MintTestHooks.loadJson(config.readAsStringSync());
+          debugPrint(
+            'mint test hooks: page=${MintTestHooks.page} '
+            'themeMode=${MintTestHooks.themeMode} '
+            'backMenu=${MintTestHooks.showBackMenu}',
+          );
+        } catch (e) {
+          debugPrint('mint_test_config.json 解析失败：$e');
+        }
+      }
     } catch (_) {}
+  }
+  if (MintTestHooks.themeMode == 'dark') {
+    await settings.setThemeMode(ThemeMode.dark);
+  } else if (MintTestHooks.themeMode == 'light') {
+    await settings.setThemeMode(ThemeMode.light);
   }
   if (testTheme.isNotEmpty && File(testTheme).existsSync()) {
     try {
