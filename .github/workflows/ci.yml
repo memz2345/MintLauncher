@@ -327,6 +327,8 @@ jobs:
                    build/shots/spawn-file-test.txt \
                    build/shots/game-console.log \
                    build/shots/game-launch-tail.log \
+                   build/shots/game-host-console.log \
+                   build/shots/java-unified-log.txt \
                    build/shots/mod_probe_result.txt \
                    build/shots/mod_probe_progress.txt \
                    build/shots/mod-probe-mods-dir.txt \

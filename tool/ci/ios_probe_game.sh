@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # iOS「应用内启动游戏」探针执行器（CI 用）。
 #
-# 重拉应用（IosGameLaunchProbe 读沙盒 game_probe.json），轮询结果文件；
-# 游戏日志里出现 LWJGL 行后在 runner 桌面连拍三张（游戏窗口开在桌面，
-# 不在模拟器屏幕里）——「模拟器宿主跑真 Minecraft」的截图证据。
-# 60 分钟无结果视为超时（1.20.4 的 JVM 冷启动在 2 vCPU runner 上可能
-# 要几分钟，类加载全是第一次）。
+# 两阶段（2026-11-02）：
+#   阶段1  应用内 posix_spawn（真实启动链路）：重拉应用（IosGameLaunchProbe
+#          读沙盒 game_probe.json），轮询 game_probe_result.txt。实测 JVM、
+#          MC 主类、LWJGL 初始化都能起来；但模拟器应用活在 CoreSimulator
+#          的 bootstrap 域里，子进程连不上宿主 WindowServer，GLFW 建窗挂死
+#          ——这一步只证明「应用能自己把游戏进程跑起来」。
+#   阶段2  宿主 GUI 会话兜底起窗口：CI 直接执行应用生成的**同一份启动脚本**
+#          （mint_game_launch.sh —— 同一个 java、同一份 classpath），游戏
+#          窗口开在 runner 桌面，screencapture 连拍留证 ——「模拟器宿主跑
+#          真 Minecraft」的截图证据。
 #
 # 用法：bash tool/ci/ios_probe_game.sh <simulator-udid>
 set -euo pipefail
@@ -17,31 +22,22 @@ mkdir -p "$SHOTS"
 DATA="$(xcrun simctl get_app_container "$UDID" dev.mint.mint data)"
 RESULT="$DATA/Documents/game_probe_result.txt"
 LOG="$DATA/Documents/game-launch.log"
+SCRIPT="$DATA/Documents/mint_game_launch.sh"
 
 rm -f "$RESULT"
 xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true
 xcrun simctl launch --console-pty "$UDID" dev.mint.mint \
   >"$SHOTS/game-console.log" 2>&1 &
 
-lwjgl_seen=0
-shots_taken=0
+# ── 阶段1：等应用内探针出结果（10 分钟上限）──
 got_result=0
+lwjgl_seen=0
 for _ in $(seq 1 150); do # 150 * 4s = 10 分钟上限
   sleep 4
   if [ "$lwjgl_seen" = 0 ] && [ -f "$LOG" ] &&
      grep -qi "lwjgl version" "$LOG" 2>/dev/null; then
     lwjgl_seen=1
-    echo "== 游戏日志出现 LWJGL version — 等 45s 让窗口画出来，然后连拍桌面"
-  fi
-  if [ "$lwjgl_seen" = 1 ] && [ "$shots_taken" = 0 ]; then
-    sleep 45
-    screencapture -x "$SHOTS/ios-host-game-1.png" 2>/dev/null || true
-    sleep 40
-    screencapture -x "$SHOTS/ios-host-game-2.png" 2>/dev/null || true
-    sleep 50
-    screencapture -x "$SHOTS/ios-host-game-3.png" 2>/dev/null || true
-    shots_taken=1
-    ls -la "$SHOTS"/ios-host-game-*.png 2>/dev/null || true
+    echo "== 游戏日志出现 LWJGL version（应用内 JVM 已起，等探针终局）"
   fi
   if [ -f "$RESULT" ]; then
     got_result=1
@@ -49,7 +45,7 @@ for _ in $(seq 1 150); do # 150 * 4s = 10 分钟上限
   fi
 done
 
-echo "==== 游戏探针结果 ===="
+echo "==== 阶段1：应用内 posix_spawn 结果 ===="
 if [ "$got_result" = 1 ]; then
   cat "$RESULT"
   cp "$RESULT" "$SHOTS/game_probe_result.txt"
@@ -71,17 +67,60 @@ for f in game_probe_progress.txt spawn-file-test.txt spawn-trace.log; do
   fi
 done
 if [ -f "$LOG" ]; then
-  tail -60 "$LOG" >"$SHOTS/game-launch-tail.log" || true
+  tail -200 "$LOG" >"$SHOTS/game-launch-tail.log" || true
+  echo "==== game-launch.log 尾部（阶段1）===="
+  tail -30 "$SHOTS/game-launch-tail.log" || true
 else
-  printf '%s\n' "(无 game-launch.log — 子进程可能没起来，看 spawn-trace.log)" \
+  printf '%s\n' "(无 game-launch.log — 子进程没起来，看 spawn-trace.log)" \
     >"$SHOTS/game-launch-tail.log"
 fi
-if [ "$lwjgl_seen" = 0 ]; then
-  # 没等到游戏：也拍一张桌面做诊断（应用 / 报错窗口在上面）。
-  screencapture -x "$SHOTS/ios-host-desktop.png" 2>/dev/null || true
-fi
-# 收摊：杀掉残留的游戏子进程（命令行里带沙盒游戏目录路径，行内匹配）
+# 阶段1 桌面留证：bootstrap 域无 WindowServer，预期没有游戏窗口。
+screencapture -x "$SHOTS/ios-host-phase1.png" 2>/dev/null || true
+# 收掉应用内拉起的孤儿 java（SIGTERM 只杀得到 bash），给阶段2 让路。
 pkill -f "MintLauncher/minecraft" 2>/dev/null || true
 xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true
+sleep 2
+
+# ── 阶段2：宿主 GUI 会话兜底起窗口 + 桌面连拍 ──
+echo "==== 阶段2：宿主会话起游戏窗口（同一启动脚本）===="
+if [ ! -f "$SCRIPT" ]; then
+  echo "(跳过：应用没有生成 mint_game_launch.sh)"
+else
+  rm -f "$LOG"
+  bash "$SCRIPT" >"$SHOTS/game-host-console.log" 2>&1 &
+  host_pid=$!
+  lwjgl2=0
+  for _ in $(seq 1 75); do # 75 * 4s = 5 分钟
+    sleep 4
+    if [ -f "$LOG" ] && grep -qi "lwjgl version" "$LOG" 2>/dev/null; then
+      lwjgl2=1
+      break
+    fi
+    kill -0 "$host_pid" 2>/dev/null || break
+  done
+  if [ "$lwjgl2" = 1 ]; then
+    echo "== LWJGL 起来了 — 等 45s 让窗口画出来，然后连拍桌面"
+    sleep 45
+    screencapture -x "$SHOTS/ios-host-game-1.png" 2>/dev/null || true
+    sleep 40
+    screencapture -x "$SHOTS/ios-host-game-2.png" 2>/dev/null || true
+    sleep 50
+    screencapture -x "$SHOTS/ios-host-game-3.png" 2>/dev/null || true
+    ls -la "$SHOTS"/ios-host-game-*.png 2>/dev/null || true
+  else
+    echo "!! 宿主会话里游戏也没走到 LWJGL（看 game-host-console.log / game-launch.log）"
+    screencapture -x "$SHOTS/ios-host-phase2-fail.png" 2>/dev/null || true
+  fi
+  # 尸检材料：宿主会话 java 的统一日志（WindowServer / GLFW 报错在这）。
+  log show --last 10m --predicate 'process == "java"' --style compact \
+    >"$SHOTS/java-unified-log.txt" 2>&1 || true
+  # 收摊：先杀 java（bash 补一行 java-exit 进 console 日志），再收 bash。
+  pkill -f "MintLauncher/minecraft" 2>/dev/null || true
+  sleep 3
+  kill "$host_pid" 2>/dev/null || true
+  if [ -f "$LOG" ]; then
+    tail -60 "$LOG" >"$SHOTS/game-launch-tail.log" || true
+  fi
+fi
 echo "==== 应用 console 尾部 ===="
 tail -40 "$SHOTS/game-console.log" || true

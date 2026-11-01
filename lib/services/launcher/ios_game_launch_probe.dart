@@ -19,9 +19,12 @@ import 'version_model.dart';
 /// `JNI_CreateJavaVM` 死在 macOS 框架路径；真 iOS 的 JVM 要按 ios-simulator
 /// 目标编译（社区暂无产物）。但**模拟器进程本质是 macOS 进程**——
 /// `posix_spawn` 没有真机的沙盒禁令（真机禁 fork/exec，模拟器不禁），
-/// 所以这一轮把游戏当 **macOS 子进程** 拉起来：游戏窗口开在 CI runner 的
-/// 桌面上（有全套 AppKit + OpenGL），Minecraft 真的能跑出主菜单。
-/// 模拟器专属的作弊路线；真机仍必须走 Pojav 的同进程 dlopen（README）。
+/// 所以这一轮把游戏当 **macOS 子进程** 拉起来。2026-11-02 实测：JVM、
+/// MC 主类、LWJGL 初始化全通；但模拟器应用活在 CoreSimulator 的
+/// bootstrap 域里，子进程连不上宿主 WindowServer，GLFW 建窗挂死 ——
+/// 窗口证据由 CI 在宿主 GUI 会话用**同一个启动脚本**兜底连拍
+/// （ios_probe_game.sh 阶段2）。模拟器专属的作弊路线；真机仍必须走
+/// Pojav 的同进程 dlopen（README）。
 ///
 /// 应用内做的事是真实链路：GameDir → 版本 json → LaunchBuilder 构建命令
 /// （osx 规则）→ posix_spawn → 盯日志判定启动结果。只有「起进程」这一步
@@ -190,14 +193,22 @@ class IosGameLaunchProbe {
       // ── 7. 盯日志：LWJGL 行 = 启动成功（与 e2e 同一判定）──
       final watched = _watch(spawnPid, logPath, buf, flush);
       if (watched.lwjgl) {
-        buf.writeln(
-          '== ✅ 游戏进程启动成功（macOS 子进程，窗口在 runner 桌面，'
-          'CI screencapture 连拍中）==',
-        );
-        // 给 CI 留连拍窗口（LWJGL 行出现 ≠ 主菜单已画出，后面才是窗口）。
-        buf.writeln('== 180 秒后收摊（CI 连拍窗口）==');
+        if (watched.stalled) {
+          buf.writeln(
+            '== ⚠️ JVM + LWJGL 初始化成功，但日志此后停滞 —— 模拟器 bootstrap '
+            '域的子进程连不上宿主 WindowServer，GLFW 建窗会挂（2026-11-02 '
+            '实测）。窗口证据由 CI 在宿主 GUI 会话用同一启动脚本兜底连拍 '
+            '（ios_probe_game.sh 阶段2）==',
+          );
+        } else {
+          buf.writeln(
+            '== ✅ 游戏进程启动成功（macOS 子进程，窗口在 runner 桌面）==',
+          );
+        }
+        // 留一小段收尾窗口（日志尾证据已齐，窗口连拍归 CI 阶段2 管）。
+        buf.writeln('== 15 秒后收摊 ==');
         flush();
-        await Future<void>.delayed(const Duration(seconds: 180));
+        await Future<void>.delayed(const Duration(seconds: 15));
       } else {
         buf.writeln(
           '== ❌ 游戏没有走到 LWJGL 初始化（详见上方日志尾）==',
@@ -237,6 +248,9 @@ class IosGameLaunchProbe {
     final sb = StringBuffer()
       ..writeln('#!/bin/bash')
       ..writeln('# 由 IosGameLaunchProbe 生成（iOS 应用内启动游戏探针）')
+      // 应用的环境没有 PATH（上一轮 date: command not found），子进程诊断
+      // 命令全靠它；java 本身走绝对路径不受影响。
+      ..writeln('export PATH=/usr/bin:/bin:/usr/sbin:/sbin')
       ..writeln('echo "bash-start pid=\$\$ cwd=\$(pwd)"')
       ..writeln(
           "echo file-write-test > ${q(p.join(docsPath, 'spawn-file-test.txt'))} "
@@ -254,7 +268,9 @@ class IosGameLaunchProbe {
   /// 轮询游戏日志，最久 330 秒。
   /// 成功 = `LWJGL version`（1.13+ 小写 / 1.7.10 大写统一按小写比）；
   /// 失败 = 主类异常或进程退出。每一步都落盘，崩了也有尸检材料。
-  static ({bool lwjgl, bool crashed}) _watch(
+  /// [stalled] = LWJGL 之后 60 秒日志零增长 —— 窗口创建卡死（模拟器
+  /// bootstrap 域无 WindowServer）的特征，CI 据此知道要兜底起窗口。
+  static ({bool lwjgl, bool crashed, bool stalled}) _watch(
     int pid,
     String logPath,
     StringBuffer buf,
@@ -262,6 +278,9 @@ class IosGameLaunchProbe {
   ) {
     var lwjgl = false;
     var crashed = false;
+    var stalled = false;
+    var lwjglSize = 0;
+    var stallPolls = 0;
     var lastSize = 0;
     String? death; // 收尸结论（一次）
     final tail = <String>[];
@@ -293,9 +312,23 @@ class IosGameLaunchProbe {
                 crashed = true;
               }
             }
+            if (lwjgl && lwjglSize == 0) lwjglSize = bytes.length;
           }
         }
       } catch (_) {}
+      // LWJGL 后窗口创建是否推进：60 秒（15 轮）零增长 = 卡死在建窗。
+      if (lwjgl && lwjglSize > 0) {
+        if (lastSize > lwjglSize) {
+          break; // 日志还在走，窗口链路活着
+        }
+        stallPolls++;
+        if (stallPolls >= 15) {
+          stalled = true;
+          buf.writeln('[7] LWJGL 后 ${stallPolls * 4}s 日志零增长（建窗停滞）');
+          flush();
+          break;
+        }
+      }
       if (lwjgl || (crashed && !alive)) {
         break;
       }
@@ -315,7 +348,7 @@ class IosGameLaunchProbe {
     }
     buf.writeln('---- 日志尾结束 ----');
     flush();
-    return (lwjgl: lwjgl, crashed: crashed);
+    return (lwjgl: lwjgl, crashed: crashed, stalled: stalled);
   }
 
   // ─────────────────── FFI：posix_spawn / kill ───────────────────
