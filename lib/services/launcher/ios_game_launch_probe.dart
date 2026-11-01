@@ -179,7 +179,11 @@ class IosGameLaunchProbe {
       // ── 6. posix_spawn（应用进程内拉起 macOS 子进程）──
       buf.writeln('[6] posix_spawn /bin/bash $scriptPath ...');
       flush();
-      spawnPid = _posixSpawn('/bin/bash', [scriptPath]);
+      // argv[0] 必须是程序名：posix_spawn 语义下脚本路径要放在 argv[1]。
+      // 之前漏了 argv[0] —— bash 收到的 argv=[脚本路径, NULL]，等于裸 bash
+      // 读 stdin（EOF 即退）秒退 0，脚本一行都没跑：三轮探针「秒退 0、
+      // 零输出、零文件」的全部怪象都源于这一位。
+      spawnPid = _posixSpawn('/bin/bash', ['/bin/bash', scriptPath]);
       buf.writeln('    pid=$spawnPid rc=0（spawn 成功）');
       flush();
 
@@ -317,6 +321,7 @@ class IosGameLaunchProbe {
   // ─────────────────── FFI：posix_spawn / kill ───────────────────
 
   /// pid_t 在 darwin 上是 int（32 位）。
+  /// [argv] 必须自带 argv[0]（程序名），参数从 argv[1] 起 —— 与 execve 语义一致。
   static int _posixSpawn(String path, List<String> argv) {
     final dylib = DynamicLibrary.process();
     final spawn = dylib.lookupFunction<
