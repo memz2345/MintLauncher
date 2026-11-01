@@ -45,14 +45,23 @@ class IosJvmProbe {
   }
 
   static Future<void> run(String docsPath) async {
+    // 过程写 _progress；结果文件只在终局写（CI 靠它判断探针跑完，
+    // 半路就出现会把应用提前杀掉）。
     final resultFile = File(p.join(docsPath, 'jvm_probe_result.txt'));
+    final progressFile = File(p.join(docsPath, 'jvm_probe_progress.txt'));
     final buf = StringBuffer();
 
     // 每过一步就落一次盘：JVM / dyld 崩起来是整进程死亡，宿主的
     // Isolate 捕获不到，只有增量日志能定位死在哪一步。
     void flush() {
       try {
-        resultFile.parent.createSync(recursive: true);
+        progressFile.parent.createSync(recursive: true);
+        progressFile.writeAsStringSync('${buf.toString()}\n');
+      } catch (_) {}
+    }
+
+    void finish() {
+      try {
         resultFile.writeAsStringSync('${buf.toString()}\n');
       } catch (_) {}
     }
@@ -204,6 +213,8 @@ class IosJvmProbe {
       buf.writeln(st.toString());
     }
     flush();
+    // 结果文件只在终局写（CI 靠它判断探针跑完了）。
+    finish();
     try {
       File(p.join(docsPath, 'run_jvm_probe')).deleteSync();
     } catch (_) {}

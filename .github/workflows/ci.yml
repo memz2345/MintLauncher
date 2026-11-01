@@ -312,9 +312,12 @@ jobs:
               "${files[@]}" || true
           fi
           for f in build/shots/jvm_probe_result.txt \
+                   build/shots/jvm_probe_progress.txt \
                    build/shots/jvm-console.log \
                    build/shots/jvm-unified-log.txt \
                    build/shots/game_probe_result.txt \
+                   build/shots/game_probe_progress.txt \
+                   build/shots/spawn-trace.log \
                    build/shots/game-console.log \
                    build/shots/game-launch-tail.log; do
             if [ -f "$f" ]; then

@@ -55,12 +55,21 @@ class IosGameLaunchProbe {
   }
 
   static Future<void> run(String docsPath) async {
+    // 过程写 _progress（CI 只轮询 result —— 结果文件必须只在终局出现，
+    // 否则 CI 会在探针刚启动时就把应用杀掉）。
     final resultFile = File(p.join(docsPath, 'game_probe_result.txt'));
+    final progressFile = File(p.join(docsPath, 'game_probe_progress.txt'));
     final buf = StringBuffer();
 
     void flush() {
       try {
-        resultFile.parent.createSync(recursive: true);
+        progressFile.parent.createSync(recursive: true);
+        progressFile.writeAsStringSync('${buf.toString()}\n');
+      } catch (_) {}
+    }
+
+    void finish() {
+      try {
         resultFile.writeAsStringSync('${buf.toString()}\n');
       } catch (_) {}
     }
@@ -110,7 +119,7 @@ class IosGameLaunchProbe {
       if (missing.isNotEmpty) {
         buf.writeln('!! CI 预置素材缺失: ${missing.join(', ')}');
         buf.writeln('== ❌ 探针失败（素材没就位）==');
-        flush();
+        finish();
         return;
       }
       final mode = File(javaExe).statSync().mode;
@@ -156,9 +165,13 @@ class IosGameLaunchProbe {
       flush();
 
       // ── 5. 写启动脚本（exec + 日志重定向，posix_spawn 只带两个参数）──
+      // 脚本第一行先把 bash 自己的输出重定向到 spawn-trace.log —— 文件
+      // 出现 = bash exec 成功；内容能看到 cd / exec 死在哪一步。
       final logPath = p.join(docsPath, 'game-launch.log');
       final scriptPath = p.join(docsPath, 'mint_game_launch.sh');
-      File(scriptPath).writeAsStringSync(_script(command, gameRoot, logPath));
+      File(scriptPath).writeAsStringSync(
+        _script(command, gameRoot, logPath, docsPath),
+      );
       buf.writeln('[5] 启动脚本: $scriptPath');
       flush();
 
@@ -195,6 +208,8 @@ class IosGameLaunchProbe {
       if (spawnPid != 0) _kill(spawnPid, 15);
     }
     flush();
+    // 结果文件只在终局写（CI 靠它判断探针跑完了）。
+    finish();
   }
 
   /// 生成 bash 启动脚本：cd 到游戏根（现代版本不带 --gameDir，靠 cwd），
@@ -203,14 +218,18 @@ class IosGameLaunchProbe {
     LaunchCommand command,
     String gameRoot,
     String logPath,
+    String docsPath,
   ) {
     String q(String s) => "'${s.replaceAll("'", r"'\''")}'";
     final sb = StringBuffer()
       ..writeln('#!/bin/bash')
       ..writeln('# 由 IosGameLaunchProbe 生成（iOS 应用内启动游戏探针）')
-      ..writeln('cd ${q(gameRoot)}')
-      ..write('exec ${q(command.executable)}');
-    sb.writeln(' ${command.args.map(q).join(' ')} > ${q(logPath)} 2>&1');
+      ..writeln('exec > ${q(p.join(docsPath, 'spawn-trace.log'))} 2>&1')
+      ..writeln('echo "bash-start pid=\$\$ date=\$(date)"')
+      ..writeln('cd ${q(gameRoot)} || { echo "cd 失败"; exit 2; }')
+      ..write('echo "exec java..."');
+    sb.writeln(' && exec ${q(command.executable)} '
+        '${command.args.map(q).join(' ')} > ${q(logPath)} 2>&1');
     return sb.toString();
   }
 
@@ -229,7 +248,8 @@ class IosGameLaunchProbe {
     final tail = <String>[];
     for (var i = 0; i < 82; i++) {
       // 82 * 4s ≈ 330s
-      final alive = _kill(pid, 0) == 0;
+      final state = _waitpidNoHang(pid);
+      final alive = state == null; // null = 还活着
       try {
         final f = File(logPath);
         if (f.existsSync()) {
@@ -255,9 +275,9 @@ class IosGameLaunchProbe {
       if (lwjgl || (crashed && !alive)) {
         break;
       }
-      if (i % 5 == 0 || lwjgl || crashed) {
+      if (i % 5 == 0 || lwjgl || crashed || !alive) {
         buf.writeln(
-          '[7] t=${i * 4}s pid=${alive ? '活着' : '退出'} '
+          '[7] t=${i * 4}s pid=${state ?? '活着'} '
           'lwjgl=$lwjgl crashed=$crashed 日志=${lastSize}B',
         );
         flush();
@@ -334,6 +354,26 @@ class IosGameLaunchProbe {
           'kill',
         );
     return kill(pid, sig);
+  }
+
+  /// waitpid(WNOHANG)：null = 还活着；否则返回可读的退出描述
+  ///（顺带把僵尸收掉，返回值里的状态就是尸检结论）。
+  static String? _waitpidNoHang(int pid) {
+    final waitpid = DynamicLibrary.process().lookupFunction<
+        Int32 Function(Int32, Pointer<Int32>, Int32),
+        int Function(int, Pointer<Int32>, int)>('waitpid');
+    final status = calloc<Int32>();
+    try {
+      final rc = waitpid(pid, status, 1); // WNOHANG = 1 (darwin)
+      if (rc == 0) return null;
+      if (rc < 0) return 'waitpid错误(rc<0)';
+      final s = status.value;
+      if (s & 0x7F == 0) return '退出码 ${(s >> 8) & 0xFF}';
+      if (s & 0x7F == 0x7F) return ' stopped/继续（少见）';
+      return '被信号 ${s & 0x7F} 杀死${s & 0x80 != 0 ? '（core dump）' : ''}';
+    } finally {
+      calloc.free(status);
+    }
   }
 }
 

@@ -227,7 +227,8 @@ else
 fi
 
 echo "==== 5. 触发应用内探针 ===="
-rm -f "$DOCS/jvm_probe_result.txt" "$DOCS/run_jvm_probe"
+rm -f "$DOCS/jvm_probe_result.txt" "$DOCS/jvm_probe_progress.txt" \
+      "$DOCS/run_jvm_probe"
 touch "$DOCS/run_jvm_probe"
 xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true
 # --console-pty 把应用 stdout/stderr 留在文件里：JVM/dyld 崩进程时，
@@ -235,12 +236,16 @@ xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true
 xcrun simctl launch --console-pty "$UDID" dev.mint.mint \
   >"$ROOT/build/shots/jvm-console.log" 2>&1 &
 
-for _ in $(seq 1 48); do
+for _ in $(seq 1 72); do # 72 * 5s = 6 分钟（重打标签 JRE 首次 boot 较慢）
   sleep 5
   if [ -f "$DOCS/jvm_probe_result.txt" ]; then
     break
   fi
 done
+# 过程日志一并带走（应用中途被杀时 result 没有终局）。
+if [ -f "$DOCS/jvm_probe_progress.txt" ]; then
+  cp "$DOCS/jvm_probe_progress.txt" "$ROOT/build/shots/jvm_probe_progress.txt" || true
+fi
 
 # 模拟器进程的统一日志（dyld / watchdog 终止原因）。
 xcrun simctl spawn "$UDID" log show --last 10m \

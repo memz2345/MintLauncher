@@ -58,10 +58,21 @@ else
   printf '%s\n' "!! iOS 游戏探针超时：应用进程没有写出 game_probe_result.txt" \
     >"$SHOTS/game_probe_result.txt"
 fi
+# 过程日志（progress / bash 自证）一并带走 —— 应用中途被杀时 result
+# 没有终局，只有这里有线索。
+for f in game_probe_progress.txt spawn-trace.log; do
+  if [ -f "$DATA/Documents/$f" ]; then
+    cp "$DATA/Documents/$f" "$SHOTS/$f" || true
+    echo "==== $f（尾 30 行）===="
+    tail -30 "$SHOTS/$f" || true
+  else
+    echo "(无 $f)"
+  fi
+done
 if [ -f "$LOG" ]; then
   tail -60 "$LOG" >"$SHOTS/game-launch-tail.log" || true
 else
-  printf '%s\n' "(无 game-launch.log — 子进程可能没起来)" \
+  printf '%s\n' "(无 game-launch.log — 子进程可能没起来，看 spawn-trace.log)" \
     >"$SHOTS/game-launch-tail.log"
 fi
 if [ "$lwjgl_seen" = 0 ]; then

@@ -55,7 +55,9 @@ cp -R "$GAME" "$DATA/Documents/MintLauncher/minecraft"
 cp "$JAR" "$DATA/Documents/mc-client.jar"
 rm -f "$DATA/Documents/game_probe.json" \
       "$DATA/Documents/game_probe_result.txt" \
+      "$DATA/Documents/game_probe_progress.txt" \
       "$DATA/Documents/game-launch.log" \
+      "$DATA/Documents/spawn-trace.log" \
       "$DATA/Documents/mint_game_launch.sh"
 cat > "$DATA/Documents/game_probe.json" <<JSON
 {"version":"$VERSION","memoryMb":2048,"width":854,"height":480}
