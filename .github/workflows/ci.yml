@@ -222,14 +222,26 @@ jobs:
                 fi
               done
               if [ "$ok" = 1 ]; then
-                # 首帧后再等页面稳定，重截一张。
+                # 首帧后再等页面稳定，重截一张；但只在白屏门槛之上才覆盖，
+                # 免得「应用刚好在这 6 秒里被 watchdog 杀」把好图冲成 70KB 白屏。
                 sleep 6
-                xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
+                local stable="build/shots/ios-$name-stable.png"
+                xcrun simctl io "$UDID" screenshot "$stable" || true
+                if [ -f "$stable" ] &&
+                   [ "$(stat -f%z "$stable")" -gt 200000 ]; then
+                  mv "$stable" "build/shots/ios-$name.png"
+                fi
+                rm -f "$stable"
                 break
               fi
               xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
               sleep 2
             done
+            if [ "$ok" = 0 ]; then
+              # 三次都没拿到真实画面：宁可缺这张，也不把白屏当截图发布。
+              rm -f "build/shots/ios-$name.png"
+              echo "shot $name: 未拿到有效截图（白屏 / 进程被杀）"
+            fi
             xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
             sleep 2
           }
