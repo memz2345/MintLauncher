@@ -273,9 +273,20 @@ jobs:
           xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
           xcrun simctl launch "$UDID" dev.mint.mint >/dev/null 2>&1
           sleep 10
-          brew tap cameroncooke/axe >/dev/null 2>&1 || true
-          brew install axe >/dev/null 2>&1 || true
-          axe tap -x 48 -y 140 --duration 1.2 --udid "$UDID" || true
+          # AXe 直接用官方 universal 包（不依赖 brew tap，runner 上更稳）。
+          AXE_DIR="$RUNNER_TEMP/axe"
+          mkdir -p "$AXE_DIR"
+          curl -fsSL --retry 3 \
+            -o "$AXE_DIR/axe.tar.gz" \
+            'https://github.com/cameroncooke/AXe/releases/download/v1.8.0/AXe-macOS-v1.8.0-universal.tar.gz'
+          tar -xzf "$AXE_DIR/axe.tar.gz" -C "$AXE_DIR"
+          chmod +x "$AXE_DIR/axe"
+          xattr -dr com.apple.quarantine "$AXE_DIR" 2>/dev/null || true
+          export DYLD_FRAMEWORK_PATH="$AXE_DIR/Frameworks"
+          # UIContextMenuInteraction 要的是「按住 1.2 秒再松」，用 touch
+          # down/up + delay，不是普通 tap。
+          "$AXE_DIR/axe" touch -x 48 -y 140 --down --up --delay 1.2 \
+            --udid "$UDID" || true
           sleep 2
           xcrun simctl io "$UDID" screenshot \
             build/shots/ios-backmenu-native.png || true
