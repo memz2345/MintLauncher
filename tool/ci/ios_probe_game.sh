@@ -58,15 +58,16 @@ else
   printf '%s\n' "!! iOS 游戏探针超时：应用进程没有写出 game_probe_result.txt" \
     >"$SHOTS/game_probe_result.txt"
 fi
-# 过程日志（progress / bash 自证）一并带走 —— 应用中途被杀时 result
-# 没有终局，只有这里有线索。
-for f in game_probe_progress.txt spawn-trace.log; do
+# 过程日志（progress / 子进程文件写测试）一并带走 —— 应用中途被杀时
+# result 没有终局，只有这里有线索。注意：echo 里 $f 后面不能紧跟全角
+# 括号（macOS runner 的 bash 会把它吃进变量名，上一轮就是这么炸的）。
+for f in game_probe_progress.txt spawn-file-test.txt spawn-trace.log; do
   if [ -f "$DATA/Documents/$f" ]; then
     cp "$DATA/Documents/$f" "$SHOTS/$f" || true
-    echo "==== $f（尾 30 行）===="
+    echo "==== ${f} tail-30 ===="
     tail -30 "$SHOTS/$f" || true
   else
-    echo "(无 $f)"
+    echo "(no ${f})"
   fi
 done
 if [ -f "$LOG" ]; then

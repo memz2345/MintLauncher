@@ -318,6 +318,7 @@ jobs:
                    build/shots/game_probe_result.txt \
                    build/shots/game_probe_progress.txt \
                    build/shots/spawn-trace.log \
+                   build/shots/spawn-file-test.txt \
                    build/shots/game-console.log \
                    build/shots/game-launch-tail.log; do
             if [ -f "$f" ]; then

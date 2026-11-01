@@ -169,10 +169,11 @@ class IosGameLaunchProbe {
       // 出现 = bash exec 成功；内容能看到 cd / exec 死在哪一步。
       final logPath = p.join(docsPath, 'game-launch.log');
       final scriptPath = p.join(docsPath, 'mint_game_launch.sh');
-      File(scriptPath).writeAsStringSync(
-        _script(command, gameRoot, logPath, docsPath),
+      final scriptText = _script(command, gameRoot, logPath, docsPath);
+      File(scriptPath).writeAsStringSync(scriptText);
+      buf.writeln(
+        '[5] 启动脚本: $scriptPath (${scriptText.length} 字符)',
       );
-      buf.writeln('[5] 启动脚本: $scriptPath');
       flush();
 
       // ── 6. posix_spawn（应用进程内拉起 macOS 子进程）──
@@ -214,6 +215,14 @@ class IosGameLaunchProbe {
 
   /// 生成 bash 启动脚本：cd 到游戏根（现代版本不带 --gameDir，靠 cwd），
   /// exec java + 全部参数，stdout/stderr 进日志文件。
+  /// 生成启动脚本。bash 级痕迹全部走 **stdout**（继承应用的 console-pty，
+  /// CI 抓得到），不依赖文件重定向 —— 上一轮 exec > 重定向后 bash 秒退 0
+  /// 且无任何文件，改用最保守的写法收集证据：
+  ///   1. bash-start（证明脚本被读了）
+  ///   2. 文件写测试（证明沙盒允许子进程写文件）
+  ///   3. cd 游戏目录
+  ///   4. java 的 stdout/stderr → 游戏日志文件；bash 不用 exec，收 java
+  ///      的退出码写进日志再退出。
   static String _script(
     LaunchCommand command,
     String gameRoot,
@@ -224,12 +233,17 @@ class IosGameLaunchProbe {
     final sb = StringBuffer()
       ..writeln('#!/bin/bash')
       ..writeln('# 由 IosGameLaunchProbe 生成（iOS 应用内启动游戏探针）')
-      ..writeln('exec > ${q(p.join(docsPath, 'spawn-trace.log'))} 2>&1')
-      ..writeln('echo "bash-start pid=\$\$ date=\$(date)"')
-      ..writeln('cd ${q(gameRoot)} || { echo "cd 失败"; exit 2; }')
-      ..write('echo "exec java..."');
-    sb.writeln(' && exec ${q(command.executable)} '
-        '${command.args.map(q).join(' ')} > ${q(logPath)} 2>&1');
+      ..writeln('echo "bash-start pid=\$\$ cwd=\$(pwd)"')
+      ..writeln(
+          "echo file-write-test > ${q(p.join(docsPath, 'spawn-file-test.txt'))} "
+          '&& echo file-write-ok || echo file-write-DENIED')
+      ..writeln('cd ${q(gameRoot)} && echo cd-ok || { echo cd-failed; exit 2; }')
+      ..writeln('echo "java starting \$(date)"');
+    sb.writeln(
+      '${q(command.executable)} ${command.args.map(q).join(' ')} '
+      '> ${q(logPath)} 2>&1',
+    );
+    sb.writeln('echo "java-exit=\$?"');
     return sb.toString();
   }
 
@@ -245,11 +259,17 @@ class IosGameLaunchProbe {
     var lwjgl = false;
     var crashed = false;
     var lastSize = 0;
+    String? death; // 收尸结论（一次）
     final tail = <String>[];
     for (var i = 0; i < 82; i++) {
       // 82 * 4s ≈ 330s
-      final state = _waitpidNoHang(pid);
-      final alive = state == null; // null = 还活着
+      final state = death ?? _waitpidNoHang(pid);
+      if (state != null && death == null) {
+        death = state;
+        buf.writeln('[7] 子进程收尸: $state（游戏日志还没起就死 = 看下面定位）');
+        flush();
+      }
+      final alive = death == null && _kill(pid, 0) == 0;
       try {
         final f = File(logPath);
         if (f.existsSync()) {
@@ -277,7 +297,7 @@ class IosGameLaunchProbe {
       }
       if (i % 5 == 0 || lwjgl || crashed || !alive) {
         buf.writeln(
-          '[7] t=${i * 4}s pid=${state ?? '活着'} '
+          '[7] t=${i * 4}s pid=${death ?? (alive ? '活着' : '没了')} '
           'lwjgl=$lwjgl crashed=$crashed 日志=${lastSize}B',
         );
         flush();
