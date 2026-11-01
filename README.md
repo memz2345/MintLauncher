@@ -769,18 +769,28 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   数据目录（沙盒 Documents）均正常。待查 simctl 环境转发或改用
   Dart VM service 注入。
 - **iOS 26 系统液态玻璃（2026-10-31 起）**：悬浮底栏 / 返回键接**系统自带**
-  Liquid Glass（`ios/Runner/GlassBridge.swift`，通道 `mint/ios_glass`）：
-  - 原生在 Flutter 视图之上铺 `UIGlassEffect` + `UIVisualEffectView`
-    （糊的是身后的 Flutter 内容，与系统 tab 栏同款）；玻璃视图不接收
-    触摸，点击全穿透回 Flutter；
-  - `UIGlassEffect` 用 **`NSClassFromString` 反射构造**：CI 的 Xcode 可能
-    还没带 iOS 26 SDK，反射在旧 SDK 上也能编译；运行时没有该类（iOS < 26）
-    能力探测返回 false，Flutter 自动回到自绘毛玻璃胶囊；
-  - Dart 侧区域上报 = `GlassRegion` 组件（每帧实测全局矩形，参数没变不
-    重发通道消息；dispose 自动摘除）。底栏玻璃模式下不再自绘底色 / 阴影 /
-    BackdropFilter，只画指示器与内容；
+  Liquid Glass（`ios/Runner/GlassBridge.swift`，通道 `mint/ios_glass` +
+  平台视图 `mint/liquid_glass`）：
+  - **架构 = 平台视图垫底**：`UiKitView` 长在底栏 / 返回键的 Stack 最底层，
+    `UIGlassEffect` 糊的是 Flutter 里它**身后**的页面内容；图标 / 箭头由
+    Flutter 叠在平台视图之上。第一版把原生玻璃盖在 FlutterView 最上层，
+    图标被一起折射掉（截图实证）—— 平台视图才是正确姿势；
+  - 原生玻璃视图 `isUserInteractionEnabled = false`，拖动 / 点按照常走
+    Flutter；`UIGlassEffect` 用 **`NSClassFromString` 反射构造**，CI 的
+    Xcode 没带 iOS 26 SDK 也能编译；
+  - **必须用 `macos-26` runner**（Xcode 26 + iOS 26 模拟器 runtime）：
+    macos-15 是 iOS 18 runtime，探测如实降级为自绘毛玻璃胶囊；
   - **返回键的玻璃底是可选的**（设置 → 外观 →「返回键玻璃底」，默认开；
     关掉就是裸返回箭头）。主开关「液态玻璃底栏」同在（仅 iOS 显示）。
+- **iOS 起 JVM 探针（「试一下能不能启动游戏」第一性实验，CI 每轮执行）**：
+  模拟器进程跑在 macOS 上、允许 JIT，`ios_jvm_probe.dart` 用 FFI 下载
+  Temurin macOS arm64 JRE → 解压 → `dlopen libjvm.dylib` →
+  `JNI_CreateJavaVM`。**实测结论：iOS 26 模拟器的 dlopen 强制校验平台
+  标签，macOS 版 libjvm 被拒**（`incompatible platform (have 'macOS',
+  need 'iOS-simulator')`）—— 想在模拟器上真跑游戏，需要把 OpenJDK 按
+  **iOS-simulator 平台目标**重新编译（这条路 JIT 全速可用，社区尚无
+  现成产物）；**真机**仍是 Pojav 路线（设备版 OpenJDK + JIT 特权 +
+  MetalANGLE 渲染）。探针每轮把证据写进 artifact `jvm_probe_result.txt`。
 - **iOS 启动游戏 = 明确降级**：`GameLaunchSupport`（lib/services/launcher/
   launch_support.dart）统一平台能力表 —— iOS 沙盒禁 fork/exec，未接
   OpenJDK（Pojav 路线）前启动入口直接弹三风格说明框（OpenJDK 同进程
