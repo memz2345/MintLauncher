@@ -1,0 +1,10 @@
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f00/Cocoa  <- 16 个文件, e.g. bin/jwebserver
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f02/ApplicationServices  <- 14 个文件, e.g. bin/jwebserver
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f08/AppKit  <- 4 个文件, e.g. lib/libsplashscreen.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f10/Kerberos  <- 1 个文件, e.g. lib/libosxkrb5.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f11/Carbon  <- 3 个文件, e.g. lib/libosxui.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f12/JavaRuntimeSupport  <- 5 个文件, e.g. lib/libosxui.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f16/ExceptionHandling  <- 2 个文件, e.g. lib/libawt_lwawt.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f17/OpenGL  <- 3 个文件, e.g. lib/libawt_lwawt.dylib
+MISSING /Users/runner/work/_temp/mint-sim-F2ct7o/f22/AudioUnit  <- 1 个文件, e.g. lib/libjsound.dylib
+total_missing=9

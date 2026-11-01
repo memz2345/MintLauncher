@@ -1,0 +1,7 @@
+=== iOS JVM probe 2026-11-01T15:09:16.100359 ===
+[1] 使用 CI 预置的 iOS-simulator 重签 JRE
+    java.home=/Users/runner/Library/Developer/CoreSimulator/Devices/2263B19F-42E8-4C8B-8AF1-D79508216C90/data/Containers/Data/Application/97076EBF-19B5-4605-B6E9-31075A02D318/Documents/jvm_ios_sim
+[4] dlopen /Users/runner/Library/Developer/CoreSimulator/Devices/2263B19F-42E8-4C8B-8AF1-D79508216C90/data/Containers/Data/Application/97076EBF-19B5-4605-B6E9-31075A02D318/Documents/jvm_ios_sim/lib/server/libjvm.dylib
+    OK
+[5] JNI_CreateJavaVM(JNI_VERSION_1_8, 3 options)
+

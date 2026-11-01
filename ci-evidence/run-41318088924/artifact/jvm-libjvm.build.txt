@@ -1,0 +1,8 @@
+/Users/runner/work/MintLauncher/MintLauncher/build/ios-jre/jre/jdk-21.0.13+9-jre/Contents/Home/lib/server/libjvm.dylib:
+Load command 16
+      cmd LC_BUILD_VERSION
+  cmdsize 24
+ platform IOSSIMULATOR
+    minos 17.0
+      sdk 17.0
+   ntools 0

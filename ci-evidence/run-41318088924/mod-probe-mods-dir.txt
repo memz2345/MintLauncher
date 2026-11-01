@@ -1,0 +1,4 @@
+total 4280
+drwxr-xr-x  3 runner  staff       96 Nov  1 15:08 .
+drwxr-xr-x  7 runner  staff      224 Nov  1 15:08 ..
+-rw-r--r--  1 runner  staff  2187523 Nov  1 15:08 fabric-api-0.97.3+1.20.4.jar
