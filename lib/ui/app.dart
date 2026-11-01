@@ -128,7 +128,6 @@ class _MintAppState extends State<MintApp> with WidgetsBindingObserver {
         showMintBackStackMenu(
           navContext,
           anchor: Offset(24, MediaQuery.paddingOf(navContext).top + 28),
-          preferNative: Platform.isIOS,
         ).catchError((Object e, StackTrace st) {
           debugPrint('back menu hook failed: $e\n$st');
         });

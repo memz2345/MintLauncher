@@ -115,7 +115,11 @@ class LiquidGlassBarService {
 
   static bool _handlerInstalled = false;
 
-  static bool get _platformSupported => debugForceNative || Platform.isAndroid;
+  /// Android 走 Compose 原生栏；iOS 26+ 走 `NativeTabBarBridge.swift` 的
+  /// `UITabBarController`（真正的系统 Liquid Glass tab bar）。是否启用由
+  /// 壳层按能力探测决定，这里只负责「通道是否可用」。
+  static bool get _platformSupported =>
+      debugForceNative || Platform.isAndroid || Platform.isIOS;
 
   static bool get canUseNative => enabled && _platformSupported;
 

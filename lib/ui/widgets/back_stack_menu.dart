@@ -1,21 +1,18 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/ui/window_chrome.dart';
 
-/// 长按返回键 → 选择返回层级（iOS 14+ 导航栏同款行为）。
+/// 长按返回键 → 选择返回层级（iOS 14+ 导航栏同款行为）的 **Flutter 降级版**。
 ///
-/// - iOS 16+：交给系统 `UIEditMenuInteraction`（真正的原生菜单，玻璃底 +
-///   系统动效），坐标从 Flutter 逻辑像素直接换算（iOS 上 1 逻辑像素 = 1pt）；
-/// - iOS 14/15 / 原生不可用：Flutter 自绘同款（毛玻璃圆角面板 + 当前层打勾），
-///   行为一致。桌面 / Android 不会调用这里（没有长按返回的交互习惯）。
+/// iOS 26+ 的返回键是原生平台视图（`NativeBackButton.swift`），长按直接由
+/// `UIContextMenuInteraction` 弹系统 context menu，不经过这里；本函数用于：
+///   - iOS 14/15：App 层没有公开 API 拉起导航栏返回菜单；
+///   - 桌面 / 测试钩子：窗口标题栏与截图需要同一套层级面板。
 Future<void> showMintBackStackMenu(
   BuildContext context, {
   Offset? anchor,
-  bool preferNative = true,
 }) async {
   final targets = MintWindowChrome.instance.backTargets;
   if (targets.length <= 1) {
@@ -25,29 +22,9 @@ Future<void> showMintBackStackMenu(
 
   final navigator = Navigator.of(context);
   final media = MediaQuery.of(context);
-  // 系统菜单是「当前层在上、更早的层在下」，和栈顺序相反。
+  // 菜单是「当前层在上、更早的层在下」，和栈顺序相反。
   final ordered = targets.reversed.toList(growable: false);
   final anchorPoint = anchor ?? Offset(24, media.padding.top + 28);
-
-  void popTo(PageRoute<dynamic> route) {
-    if (!route.isActive) return;
-    navigator.popUntil((r) => r == route);
-  }
-
-  if (preferNative && Platform.isIOS) {
-    final glass = IosLiquidGlass.instance;
-    glass.ensureHandler();
-    glass.onBackMenuSelected = (index) {
-      if (index < 0 || index >= ordered.length) return;
-      popTo(ordered[index].route);
-    };
-    final native = await glass.showBackMenu(
-      titles: [for (final t in ordered) t.title],
-      currentIndex: 0,
-      anchor: anchorPoint,
-    );
-    if (native) return;
-  }
 
   if (!context.mounted) return;
   await _showFlutterMenu(

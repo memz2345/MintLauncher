@@ -13,6 +13,7 @@ import 'package:mint/services/window_backdrop.dart';
 import 'package:mint/ui/mint_icons.dart';
 import 'package:mint/ui/window_chrome.dart';
 import 'package:mint/ui/widgets/back_stack_menu.dart';
+import 'package:mint/ui/widgets/ios_native_back_button.dart';
 import 'package:mint/ui/widgets/mint_progressive_band.dart';
 import 'package:mint/ui/widgets/page_background.dart';
 import 'package:mint/ui/widgets/top_bar_tone.dart';
@@ -184,18 +185,49 @@ class _MintPageScaffoldState extends State<MintPageScaffold> {
   Widget? _resolvedLeading(BuildContext context) {
     if (widget.leading != null) return widget.leading;
     if (!widget.showBack) return null;
-    // 玻璃圆底由 MintTopBarAction 统一铺（设置里关掉就是裸箭头）。
+
+    // iOS 26+：整颗返回键交给 UIKit —— UIButton.Configuration.glass() 的
+    // 系统玻璃底盘、SF Symbol chevron.backward、UIContextMenuInteraction
+    // 长按层级菜单，全部原生（平台视图 `mint/native_back_button`）。
+    if (Platform.isIOS &&
+        IosLiquidGlass.instance.cachedNativeBackButton == true) {
+      final ordered = MintWindowChrome.instance.backTargets.reversed.toList(
+        growable: false,
+      );
+      if (ordered.length > 1) {
+        SettingsService? settings;
+        try {
+          settings = context.read<SettingsService>();
+        } catch (_) {}
+        final glass =
+            (settings?.iosLiquidGlass ?? true) &&
+            (settings?.iosGlassBackBackground ?? true);
+        return IosNativeBackButton(
+          targets: ordered,
+          glass: glass,
+          dark: Theme.of(context).brightness == Brightness.dark,
+          onBack: () => Navigator.of(context).maybePop(),
+          onSelect: (index) {
+            if (index < 0 || index >= ordered.length) return;
+            final target = ordered[index].route;
+            if (!target.isActive) return;
+            Navigator.of(context).popUntil((r) => r == target);
+          },
+        );
+      }
+    }
+
+    // iOS < 26 / 测试环境：Flutter 自绘返回键。玻璃圆底由 MintTopBarAction
+    // 统一铺（设置里关掉就是裸箭头），长按用 Flutter 同款层级面板。
     Widget back = MintTopBarAction(
       miuix: mintMiuixOf(context),
       tooltip: '返回',
-      // 三套风格各自的返回箭头（fluent：chrome_back / miuix：矢量 back /
-      // Material：arrow_back）。
+      // 三套风格各自的返回箭头（iOS 用 Cupertino chevron；fluent：
+      // chrome_back；miuix：矢量 back；Material：arrow_back）。
       child: const MintBackIcon(size: 22),
       onPressed: () => Navigator.of(context).maybePop(),
     );
     if (Platform.isIOS) {
-      // iOS 14+ 导航栏同款：长按返回键弹出层级菜单。放在按钮外层做手势，
-      // 点按仍归 IconButton / MiuixIconButton（短按 pop）。
       back = GestureDetector(
         behavior: HitTestBehavior.translucent,
         onLongPress: () {

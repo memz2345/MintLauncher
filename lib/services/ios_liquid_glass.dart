@@ -21,16 +21,13 @@ class IosLiquidGlass {
 
   bool _probed = false;
   bool _available = false;
-  bool _backMenuNative = false;
+  bool _nativeBackButton = false;
   num _iosVersion = 0;
-
-  /// 原生侧长按返回菜单选中了一层。
-  void Function(int index)? onBackMenuSelected;
 
   /// 探测结果缓存（未探测时为 null）。组件同步取用；探测在应用启动时做。
   bool? get cachedAvailable => _probed ? _available : null;
 
-  /// iOS 26+ 才有 UIGlassEffect。
+  /// iOS 26+ 才有 UIGlassEffect / UIButton.Configuration.glass()。
   Future<bool> available() async {
     if (!Platform.isIOS) return false;
     if (_probed) return _available;
@@ -40,73 +37,30 @@ class IosLiquidGlass {
         'getCapabilities',
       );
       _available = caps?['liquidGlass'] == true;
-      _backMenuNative = caps?['backMenu'] == true;
+      _nativeBackButton = caps?['nativeBackButton'] == true;
       _iosVersion = (caps?['iosVersion'] as num?) ?? 0;
       debugPrint(
         'IosLiquidGlass available=$_available '
-        'backMenu=$_backMenuNative ios=$_iosVersion',
+        'nativeBackButton=$_nativeBackButton ios=$_iosVersion',
       );
     } catch (e) {
       debugPrint('IosLiquidGlass caps failed: $e');
       _available = false;
-      _backMenuNative = false;
+      _nativeBackButton = false;
     }
     return _available;
   }
 
-  /// 长按返回键的层级菜单能否交给系统（iOS 16+ 的 UIEditMenuInteraction）。
-  ///
-  /// iOS 14/15 的系统长按菜单只有 UIKit 导航栏内部的私有路径能拉起，App 层
-  /// 没有公开 API；这两代由 Flutter 自绘同款菜单兜底（行为一致，观感稍简化）。
-  bool? get cachedBackMenuNative => _probed ? _backMenuNative : null;
-
-  /// 在 [anchor]（Flutter 全局逻辑像素）处弹原生返回层级菜单。
-  ///
-  /// 返回 false 表示原生不可用（非 iOS / iOS 16 以下 / 无 key window），
-  /// 调用方退回 Flutter 自绘菜单。
-  Future<bool> showBackMenu({
-    required List<String> titles,
-    required int currentIndex,
-    required Offset anchor,
-  }) async {
-    if (!Platform.isIOS || titles.isEmpty) return false;
-    if (cachedBackMenuNative != true) return false;
-    try {
-      final ok = await _channel.invokeMethod<bool>('showBackMenu', {
-        'titles': titles,
-        'currentIndex': currentIndex,
-        'anchor': [anchor.dx, anchor.dy],
-      });
-      return ok == true;
-    } catch (e) {
-      debugPrint('IosLiquidGlass showBackMenu failed: $e');
-      return false;
-    }
-  }
-
-  bool _handlerInstalled = false;
-
-  void ensureHandler() {
-    if (_handlerInstalled) return;
-    _handlerInstalled = true;
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onBackMenuSelected') {
-        final args = call.arguments;
-        final index = args is Map ? (args['index'] as num?)?.toInt() : null;
-        if (index != null) onBackMenuSelected?.call(index);
-      }
-      return null;
-    });
-  }
+  /// 返回键能否整颗交给 UIKit（UIButton.Configuration.glass + SF Symbol
+  /// `chevron.backward` + UIContextMenuInteraction 长按系统菜单）。
+  bool? get cachedNativeBackButton => _probed ? _nativeBackButton : null;
 
   /// 测试用。
   void reset() {
     _probed = false;
     _available = false;
-    _backMenuNative = false;
+    _nativeBackButton = false;
     _iosVersion = 0;
-    onBackMenuSelected = null;
-    _handlerInstalled = false;
   }
 }
 

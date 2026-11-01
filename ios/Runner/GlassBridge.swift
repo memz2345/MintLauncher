@@ -9,9 +9,14 @@ import UIKit
 /// `UIGlassEffect` 用 `NSClassFromString` 反射构造：CI 的 Xcode 版本可能
 /// 还没带 iOS 26 SDK，反射在旧 SDK 上也能编译；类不存在（iOS < 26）时
 /// `getCapabilities` 如实返回 false，Flutter 走自绘降级。
+///
+/// 返回键不再走「Flutter 图标 + 玻璃平台视图 + UIEditMenuInteraction」：
+/// iOS 26 的返回键用 `UIButton.Configuration.glass()`（系统提供的玻璃按钮），
+/// 长按菜单交给 `UIContextMenuInteraction`（系统 context menu）。这两者都是
+/// UIKit 文档里的标准 API，详见 `NativeBackButton.swift`。
 @objc class GlassBridge: NSObject {
   static func register(with registrar: FlutterPluginRegistrar) {
-    // 能力探测（iOS 26+ 才有 UIGlassEffect）。
+    // 能力探测（iOS 26+ 才有 UIGlassEffect / glass 按钮）。
     let channel = FlutterMethodChannel(
       name: "mint/ios_glass",
       binaryMessenger: registrar.messenger()
@@ -21,32 +26,11 @@ import UIKit
       case "getCapabilities":
         result([
           "liquidGlass": NSClassFromString("UIGlassEffect") != nil,
-          // iOS 16+ 才能用 UIEditMenuInteraction 在 App 层拉起系统菜单；
-          // iOS 14/15 由 Flutter 自绘同款（系统只在 UINavigationBar 内部
-          // 暴露长按返回菜单，没有公开 API）。
-          "backMenu": GlassBackBridgeCapabilities.backMenu,
+          // iOS 26 才能用 UIButton.Configuration.glass() + 新的返回 chevron。
+          // 旧系统由 Flutter 侧用 Cupertino chevron + 自绘菜单降级。
+          "nativeBackButton": GlassBackBridgeCapabilities.nativeBackButton,
           "iosVersion": GlassBackBridgeCapabilities.iosVersion,
         ])
-      case "showBackMenu":
-        guard #available(iOS 16.0, *) else {
-          result(false)
-          return
-        }
-        guard let args = call.arguments as? [String: Any],
-              let titles = args["titles"] as? [String], !titles.isEmpty,
-              let currentIndex = args["currentIndex"] as? Int,
-              let anchor = args["anchor"] as? [Double], anchor.count == 2
-        else {
-          result(false)
-          return
-        }
-        let ok = BackMenuPresenter.shared.present(
-          titles: titles,
-          currentIndex: currentIndex,
-          anchor: CGPoint(x: anchor[0], y: anchor[1]),
-          channel: channel
-        )
-        result(ok)
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -56,144 +40,22 @@ import UIKit
       GlassPlatformViewFactory(),
       withId: "mint/liquid_glass"
     )
+    // 平台视图：原生玻璃返回键（tap + UIContextMenuInteraction 长按层级菜单）。
+    registrar.register(
+      NativeBackButtonFactory(messenger: registrar.messenger()),
+      withId: "mint/native_back_button"
+    )
   }
 }
 
 private enum GlassBackBridgeCapabilities {
-  static var backMenu: Bool {
-    if #available(iOS 16.0, *) { return true }
+  static var nativeBackButton: Bool {
+    if #available(iOS 26.0, *) { return true }
     return false
   }
 
   static var iosVersion: Double {
     Double(UIDevice.current.systemVersion) ?? 0
-  }
-}
-
-/// 长按返回键的层级菜单（iOS 16+）。
-///
-/// 用 `UIEditMenuInteraction` 在返回按钮位置拉起系统 UIMenu —— 与
-/// UINavigationBar 长按返回键的菜单同源（玻璃底、系统动效、当前层打勾），
-/// 选择后经 MethodChannel 回传 index，由 Dart 侧 popUntil 到对应路由。
-@available(iOS 16.0, *)
-final class BackMenuPresenter: NSObject, UIEditMenuInteractionDelegate {
-  static let shared = BackMenuPresenter()
-
-  private var interaction: UIEditMenuInteraction?
-  private var anchorView: UIView?
-  private var titles: [String] = []
-  private var currentIndex = 0
-  private var channel: FlutterMethodChannel?
-
-  func present(
-    titles: [String],
-    currentIndex: Int,
-    anchor: CGPoint,
-    channel: FlutterMethodChannel
-  ) -> Bool {
-    dismissMenu()
-
-    let scene = UIApplication.shared.connectedScenes
-      .compactMap { $0 as? UIWindowScene }
-      .first { $0.activationState == .foregroundActive }
-    guard let window = scene?.windows.first(where: { $0.isKeyWindow })
-        ?? scene?.windows.first,
-          let root = window.rootViewController?.view
-    else { return false }
-
-    self.titles = titles
-    self.currentIndex = currentIndex
-    self.channel = channel
-
-    // Flutter 逻辑像素 = iOS pt；坐标是 FlutterView 全局坐标，窗口与
-    // FlutterView 全屏叠加，直接换算到 root view。
-    let point = root.convert(anchor, from: window)
-    // 1×1 的锚点会让 targetRect 退化成零面积，菜单定位不稳；铺一个
-    // 44×44 的透明热区（返回按钮同尺寸），菜单以按钮中心为锚。
-    let side: CGFloat = 44
-    let view = UIView(
-      frame: CGRect(
-        x: point.x - side / 2,
-        y: point.y - side / 2,
-        width: side,
-        height: side
-      )
-    )
-    view.backgroundColor = .clear
-    root.addSubview(view)
-
-    let interaction = UIEditMenuInteraction(delegate: self)
-    view.addInteraction(interaction)
-    self.anchorView = view
-    self.interaction = interaction
-
-    let config = UIEditMenuConfiguration(
-      identifier: nil,
-      sourcePoint: CGPoint(x: side / 2, y: side / 2)
-    )
-    interaction.presentEditMenu(with: config)
-    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    return true
-  }
-
-  private func dismissMenu() {
-    interaction?.dismissMenu()
-    cleanupViews()
-  }
-
-  private func cleanupViews() {
-    if let interaction, let anchorView {
-      anchorView.removeInteraction(interaction)
-    }
-    anchorView?.removeFromSuperview()
-    interaction = nil
-    anchorView = nil
-  }
-
-  private func select(_ index: Int) {
-    guard index >= 0 && index < titles.count else { return }
-    channel?.invokeMethod("onBackMenuSelected", arguments: ["index": index])
-    dismissMenu()
-  }
-
-  // MARK: - UIEditMenuInteractionDelegate
-
-  func editMenuInteraction(
-    _ interaction: UIEditMenuInteraction,
-    menuFor configuration: UIEditMenuConfiguration,
-    suggestedActions: [UIMenuElement]
-  ) -> UIMenu? {
-    let actions: [UIAction] = titles.enumerated().map { index, title in
-      let current = index == currentIndex
-      let attributes: UIAction.Attributes = current ? [.disabled] : []
-      return UIAction(
-        title: title,
-        image: current ? UIImage(systemName: "checkmark") : nil,
-        attributes: attributes
-      ) { [weak self] _ in
-        self?.select(index)
-      }
-    }
-    // 不要 .displayInline：那个选项会把菜单渲染成横向分段条；
-    // 标准 UIMenu 才是 iOS 26 的竖向液态玻璃菜单（当前层打勾、更早层可选）。
-    return UIMenu(title: "", children: actions)
-  }
-
-  func editMenuInteraction(
-    _ interaction: UIEditMenuInteraction,
-    targetRectFor configuration: UIEditMenuConfiguration
-  ) -> CGRect {
-    anchorView?.bounds ?? .zero
-  }
-
-  func editMenuInteraction(
-    _ interaction: UIEditMenuInteraction,
-    willDismissMenuFor configuration: UIEditMenuConfiguration,
-    animator: UIEditMenuInteractionAnimating
-  ) {
-    animator.addCompletion { [weak self] in
-      self?.cleanupViews()
-    }
   }
 }
 

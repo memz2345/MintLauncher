@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
@@ -120,6 +123,17 @@ class MintBackIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      // iOS 26 导航栏的返回键是 chevron.backward（没有横杠）；iOS 14/15
+      // 的原生返回键同样是纯 chevron。原生按钮走 SF Symbol，这里兜住
+      // Flutter 降级路径（旧系统 / 截图测试）。
+      final tint =
+          color ??
+          MintTopBarToneScope.maybeOf(context) ??
+          IconTheme.of(context).color ??
+          Theme.of(context).colorScheme.onSurface;
+      return Icon(CupertinoIcons.back, size: size, color: tint);
+    }
     return MintIcon(
       icon: Icons.arrow_back,
       fluentIcon: fluent.FluentIcons.chrome_back,

@@ -11,6 +11,10 @@ import UIKit
     if let registrar = self.registrar(forPlugin: "GlassBridge") {
       GlassBridge.register(with: registrar)
     }
+    // 原生 UITabBarController 底栏（iOS 26 系统 Liquid Glass tab bar）。
+    if let registrar = self.registrar(forPlugin: "NativeTabBarBridge") {
+      NativeTabBarBridge.register(with: registrar)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/download_center.dart';
+import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/services/liquid_glass_bar_service.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/services/window_backdrop.dart';
@@ -161,10 +162,16 @@ class _MaterialHomeShellState extends State<MaterialHomeShell>
     );
     final glass = WindowBackdrop.instance.isActive;
     final settings = context.watch<SettingsService>();
+    // Android：Compose 原生栏（开关 glassBottomBar）。
+    // iOS 26+：UITabBarController 原生 Liquid Glass 栏（开关 iosLiquidGlass）。
+    final nativeBarEnabled =
+        (Platform.isAndroid && settings.glassBottomBar) ||
+        (Platform.isIOS &&
+            settings.iosLiquidGlass &&
+            IosLiquidGlass.instance.cachedAvailable == true);
     final useNativeBar =
-        Platform.isAndroid &&
+        nativeBarEnabled &&
         !wide &&
-        settings.glassBottomBar &&
         _isTopRoute &&
         LiquidGlassBarService.enabled;
 
@@ -351,7 +358,8 @@ class _MaterialHomeShellState extends State<MaterialHomeShell>
                               for (final (i, t) in kHomeTabs.indexed)
                                 FloatingBottomBarItem(
                                   label: t.$3,
-                                  badge: i == 1 &&
+                                  badge:
+                                      i == 1 &&
                                       DownloadCenter.instance.hasActive,
                                   iconBuilder: (selected) =>
                                       Icon(selected ? t.$2 : t.$1),

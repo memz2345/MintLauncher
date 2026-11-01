@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/download_center.dart';
+import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/services/liquid_glass_bar_service.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/services/window_backdrop.dart';
@@ -167,10 +168,15 @@ class _MiuixHomeShellState extends State<MiuixHomeShell>
       applyIndex: (i) => _index = i,
     );
     final settings = context.watch<SettingsService>();
+    // Android：Compose 原生栏；iOS 26+：系统 UITabBarController 玻璃栏。
+    final nativeBarEnabled =
+        (Platform.isAndroid && settings.glassBottomBar) ||
+        (Platform.isIOS &&
+            settings.iosLiquidGlass &&
+            IosLiquidGlass.instance.cachedAvailable == true);
     final useNativeBar =
-        Platform.isAndroid &&
+        nativeBarEnabled &&
         !wide &&
-        settings.glassBottomBar &&
         _isTopRoute &&
         LiquidGlassBarService.enabled;
 
@@ -359,9 +365,7 @@ class _MiuixHomeShellState extends State<MiuixHomeShell>
                       contentColor: Theme.of(
                         context,
                       ).colorScheme.onSurfaceVariant,
-                      activeContentColor: Theme.of(
-                        context,
-                      ).colorScheme.primary,
+                      activeContentColor: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
