@@ -88,7 +88,10 @@ echo "==== 5. 触发应用内探针 ===="
 rm -f "$DOCS/jvm_probe_result.txt" "$DOCS/run_jvm_probe"
 touch "$DOCS/run_jvm_probe"
 xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true
-xcrun simctl launch "$UDID" dev.mint.mint >/dev/null 2>&1 || true
+# --console-pty 把应用 stdout/stderr 留在文件里：JVM/dyld 崩进程时，
+# 唯一能看到原因的地方（Dart 的 catch 捕获不到 native 崩溃）。
+xcrun simctl launch --console-pty "$UDID" dev.mint.mint \
+  >"$ROOT/build/shots/jvm-console.log" 2>&1 &
 
 for _ in $(seq 1 48); do
   sleep 5
@@ -97,12 +100,22 @@ for _ in $(seq 1 48); do
   fi
 done
 
+# 模拟器进程的统一日志（dyld / watchdog 终止原因）。
+xcrun simctl spawn "$UDID" log show --last 10m \
+  --predicate 'process == "Runner"' --style compact \
+  >"$ROOT/build/shots/jvm-unified-log.txt" 2>&1 || true
+
 echo "==== JVM probe result ===="
 if [ -f "$DOCS/jvm_probe_result.txt" ]; then
   cat "$DOCS/jvm_probe_result.txt"
   cp "$DOCS/jvm_probe_result.txt" "$ROOT/build/shots/jvm_probe_result.txt"
 else
   echo "(无结果文件)"
-  printf '%s\n' "!! iOS JVM 探针没有产出结果（应用可能被 watchdog 杀掉）" \
+  printf '%s\n' "!! iOS JVM 探针没有产出结果（应用可能在 dlopen / JVM 创建时崩溃）" \
     >"$ROOT/build/shots/jvm_probe_result.txt"
+  echo "==== 应用 console 尾部 ===="
+  tail -80 "$ROOT/build/shots/jvm-console.log" || true
+  echo "==== 统一日志尾部 ===="
+  tail -40 "$ROOT/build/shots/jvm-unified-log.txt" || true
 fi
+xcrun simctl terminate "$UDID" dev.mint.mint >/dev/null 2>&1 || true

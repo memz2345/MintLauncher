@@ -47,7 +47,18 @@ class IosJvmProbe {
   static Future<void> run(String docsPath) async {
     final resultFile = File(p.join(docsPath, 'jvm_probe_result.txt'));
     final buf = StringBuffer();
+
+    // 每过一步就落一次盘：JVM / dyld 崩起来是整进程死亡，宿主的
+    // Isolate 捕获不到，只有增量日志能定位死在哪一步。
+    void flush() {
+      try {
+        resultFile.parent.createSync(recursive: true);
+        resultFile.writeAsStringSync('${buf.toString()}\n');
+      } catch (_) {}
+    }
+
     buf.writeln('=== iOS JVM probe ${DateTime.now().toIso8601String()} ===');
+    flush();
     try {
       // ── 1. 预置 JRE（CI 把 macOS JRE 重打成 ios-simulator 平台标签 +
       //    重签后塞进沙盒）优先；没有就走原来的 macOS 下载（平台校验必挂，
@@ -71,12 +82,15 @@ class IosJvmProbe {
         home = _extractSync(tarPath, p.join(docsPath, 'jvm_probe'), buf);
         buf.writeln('    java.home=$home');
       }
+      flush();
 
       // ── 4. dlopen libjvm ──
       final libjvm = p.join(home, 'lib', 'server', 'libjvm.dylib');
       buf.writeln('[4] dlopen $libjvm');
+      flush();
       final dylib = DynamicLibrary.open(libjvm);
       buf.writeln('    OK');
+      flush();
 
       // ── 5. JNI_CreateJavaVM ──
       final create = dylib
@@ -109,8 +123,10 @@ class IosJvmProbe {
       final vmOut = calloc<Pointer<Void>>();
       final envOut = calloc<Pointer<Void>>();
       buf.writeln('[5] JNI_CreateJavaVM(JNI_VERSION_1_8, 2 options)...');
+      flush();
       final rc = create(vmOut, envOut, args);
       buf.writeln('    rc=$rc (${rc == 0 ? 'JNI_OK ✅' : '失败 ❌'})');
+      flush();
       if (rc != 0) {
         buf.writeln('== ❌ JVM 未能启动 ==');
         throw 'JNI_CreateJavaVM rc=$rc';
@@ -126,17 +142,20 @@ class IosJvmProbe {
         '[6] JNIEnv->GetVersion() = 0x${jniVersion.toRadixString(16)} '
         '(JNI ${jniVersion >> 16}.${jniVersion & 0xFFFF})',
       );
+      flush();
 
       // ── 7. 真正跑一段 Java：System.getProperty("java.version") ──
       // 只证明「虚拟机对象起来了」不够；能走 JNI 调进 Java 标准库，
       // 才说明这个 iOS-simulator JRE 是可用的。
       try {
         buf.writeln('[7] System.getProperty(java.version / java.vm.name)');
+        flush();
         buf.writeln('    java.version=${_javaProperty(env, 'java.version')}');
         buf.writeln('    java.vm.name=${_javaProperty(env, 'java.vm.name')}');
       } catch (e) {
         buf.writeln('!! [7] Java 属性读取失败: $e');
       }
+      flush();
 
       // ── 8. JavaVM 函数表 DestroyJavaVM（index 3）正常收摊 ──
       final vm = vmOut.value;
@@ -152,8 +171,7 @@ class IosJvmProbe {
       buf.writeln('== ❌ 探针失败 ==');
       buf.writeln(st.toString());
     }
-    resultFile.parent.createSync(recursive: true);
-    resultFile.writeAsStringSync('${buf.toString()}\n');
+    flush();
     try {
       File(p.join(docsPath, 'run_jvm_probe')).deleteSync();
     } catch (_) {}

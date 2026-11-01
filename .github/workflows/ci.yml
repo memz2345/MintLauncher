@@ -276,9 +276,13 @@ jobs:
               --notes "由 GitHub Actions 的 iOS 模拟器截图步骤覆盖更新。" \
               "${files[@]}" || true
           fi
-          if [ -f build/shots/jvm_probe_result.txt ]; then
-            gh release upload "$tag" build/shots/jvm_probe_result.txt --clobber || true
-          fi
+          for f in build/shots/jvm_probe_result.txt \
+                   build/shots/jvm-console.log \
+                   build/shots/jvm-unified-log.txt; do
+            if [ -f "$f" ]; then
+              gh release upload "$tag" "$f" --clobber || true
+            fi
+          done
 
   linux-game:
     name: Linux 游戏启动实测（Xvfb + llvmpipe）
