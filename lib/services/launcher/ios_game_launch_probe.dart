@@ -193,16 +193,16 @@ class IosGameLaunchProbe {
       // ── 7. 盯日志：LWJGL 行 = 启动成功（与 e2e 同一判定）──
       final watched = _watch(spawnPid, logPath, buf, flush);
       if (watched.lwjgl) {
-        if (watched.stalled) {
+        if (watched.windowed) {
           buf.writeln(
-            '== ⚠️ JVM + LWJGL 初始化成功，但日志此后停滞 —— 模拟器 bootstrap '
-            '域的子进程连不上宿主 WindowServer，GLFW 建窗会挂（2026-11-02 '
-            '实测）。窗口证据由 CI 在宿主 GUI 会话用同一启动脚本兜底连拍 '
-            '（ios_probe_game.sh 阶段2）==',
+            '== ✅ 游戏完整启动（GL 上下文 + 窗口创建全通，窗口在 runner 桌面）==',
           );
         } else {
           buf.writeln(
-            '== ✅ 游戏进程启动成功（macOS 子进程，窗口在 runner 桌面）==',
+            '== ⚠️ JVM + LWJGL 初始化成功，但 60 秒内无窗口推进标志 —— 模拟器 '
+            'bootstrap 域的子进程连不上宿主 WindowServer（或 CI VM 无 GL），'
+            'GLFW 建窗卡死/失败（2026-11-02 实测）。窗口证据由 CI 在宿主 '
+            'GUI 会话用同一启动脚本兜底连拍（ios_probe_game.sh 阶段2）==',
           );
         }
         // 留一小段收尾窗口（日志尾证据已齐，窗口连拍归 CI 阶段2 管）。
@@ -268,9 +268,12 @@ class IosGameLaunchProbe {
   /// 轮询游戏日志，最久 330 秒。
   /// 成功 = `LWJGL version`（1.13+ 小写 / 1.7.10 大写统一按小写比）；
   /// 失败 = 主类异常或进程退出。每一步都落盘，崩了也有尸检材料。
-  /// [stalled] = LWJGL 之后 60 秒日志零增长 —— 窗口创建卡死（模拟器
-  /// bootstrap 域无 WindowServer）的特征，CI 据此知道要兜底起窗口。
-  static ({bool lwjgl, bool crashed, bool stalled}) _watch(
+  /// [windowed] = 看到窗口创建后的推进标志（OpenAL / 音效引擎 / 纹理图集
+  /// —— 这些只在 GL 上下文建成之后打）；LWJGL 后 60 秒没有它 = 建窗卡死
+  /// （模拟器 bootstrap 域无 WindowServer / CI VM 无 GL），CI 据此兜底。
+  /// 注意不能拿「日志还在涨」当推进证据 —— authlib 的 401 是异步线程
+  /// 打的，比 LWJGL 晚一秒，会骗过尺寸判定（2026-11-02 实测）。
+  static ({bool lwjgl, bool crashed, bool windowed}) _watch(
     int pid,
     String logPath,
     StringBuffer buf,
@@ -278,8 +281,7 @@ class IosGameLaunchProbe {
   ) {
     var lwjgl = false;
     var crashed = false;
-    var stalled = false;
-    var lwjglSize = 0;
+    var windowed = false;
     var stallPolls = 0;
     var lastSize = 0;
     String? death; // 收尸结论（一次）
@@ -307,24 +309,27 @@ class IosGameLaunchProbe {
             for (final l in lines) {
               final low = l.toLowerCase();
               if (low.contains('lwjgl version')) lwjgl = true;
+              if (low.contains('openal initialized') ||
+                  low.contains('sound engine started') ||
+                  low.contains('textures/atlas')) {
+                windowed = true;
+              }
               if (l.contains('Exception in thread "main"') ||
                   (l.contains('Unable to') && l.contains('main class'))) {
                 crashed = true;
               }
             }
-            if (lwjgl && lwjglSize == 0) lwjglSize = bytes.length;
           }
         }
       } catch (_) {}
-      // LWJGL 后窗口创建是否推进：60 秒（15 轮）零增长 = 卡死在建窗。
-      if (lwjgl && lwjglSize > 0) {
-        if (lastSize > lwjglSize) {
-          break; // 日志还在走，窗口链路活着
+      // LWJGL 后窗口是否真建出来：60 秒（15 轮）内没有推进标志 = 卡死在建窗。
+      if (lwjgl) {
+        if (windowed) {
+          break; // GL 上下文 + 窗口全通
         }
         stallPolls++;
         if (stallPolls >= 15) {
-          stalled = true;
-          buf.writeln('[7] LWJGL 后 ${stallPolls * 4}s 日志零增长（建窗停滞）');
+          buf.writeln('[7] LWJGL 后 ${stallPolls * 4}s 无窗口推进标志（建窗停滞）');
           flush();
           break;
         }
@@ -348,7 +353,7 @@ class IosGameLaunchProbe {
     }
     buf.writeln('---- 日志尾结束 ----');
     flush();
-    return (lwjgl: lwjgl, crashed: crashed, stalled: stalled);
+    return (lwjgl: lwjgl, crashed: crashed, windowed: windowed);
   }
 
   // ─────────────────── FFI：posix_spawn / kill ───────────────────

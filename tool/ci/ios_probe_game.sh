@@ -114,6 +114,15 @@ else
   # 尸检材料：宿主会话 java 的统一日志（WindowServer / GLFW 报错在这）。
   log show --last 10m --predicate 'process == "java"' --style compact \
     >"$SHOTS/java-unified-log.txt" 2>&1 || true
+  # GPU 环境留档：GitHub macOS runner 是无 GPU 的 VM（Apple
+  # Virtualization.framework 客户机），NSGL 找不到 pixel format 时游戏
+  # 弹 GLFW error 65545 对话框退出 —— 这是 CI 硬件墙，不是启动器问题，
+  # 有 GPU 的真 Mac 上这步能过。截图（弹窗）+ 这份留档即终局证据。
+  system_profiler SPDisplaysDataType >"$SHOTS/host-gpu-info.txt" 2>&1 || true
+  if grep -qi "GLFW error" "$LOG" 2>/dev/null; then
+    echo "!! 窗口已建成但 GL 上下文失败（CI VM 无 OpenGL 渲染器，见弹窗截图）"
+    grep -i "GLFW error" "$LOG" | head -3 || true
+  fi
   # 收摊：先杀 java（bash 补一行 java-exit 进 console 日志），再收 bash。
   pkill -f "MintLauncher/minecraft" 2>/dev/null || true
   sleep 3

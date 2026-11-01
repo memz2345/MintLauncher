@@ -329,6 +329,7 @@ jobs:
                    build/shots/game-launch-tail.log \
                    build/shots/game-host-console.log \
                    build/shots/java-unified-log.txt \
+                   build/shots/host-gpu-info.txt \
                    build/shots/mod_probe_result.txt \
                    build/shots/mod_probe_progress.txt \
                    build/shots/mod-probe-mods-dir.txt \
