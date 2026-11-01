@@ -1,0 +1,351 @@
+getpwuid_r did not find a match for uid 501
+Timestamp               Ty Process[PID:TID]
+2026-11-01 16:49:15.750 Df Runner[36261:1973a] [com.apple.xpc:connection] [0x107004840] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-11-01 16:49:15.755 A  Runner[36261:1973a] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-11-01 16:49:15.758 Df Runner[36261:19610] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-11-01 16:49:15.761 Df Runner[36261:1973c] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-11-01 16:49:15.764 Df Runner[36261:1973c] [com.apple.xpc:connection] [0x10710afb0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-11-01 16:49:15.805 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-11-01 16:49:15.806 Df Runner[36261:19610] [com.apple.runningboard:connection] Initializing connection
+2026-11-01 16:49:15.806 Df Runner[36261:19610] [com.apple.runningboard:process] Removing all cached process handles
+2026-11-01 16:49:15.806 Df Runner[36261:1973c] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-11-01 16:49:15.806 Df Runner[36261:1973c] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-11-01 16:49:15.806 Df Runner[36261:19610] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-11-01 16:49:15.806 Df Runner[36261:1973c] [com.apple.xpc:connection] [0x10710b0f0] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-11-01 16:49:15.808 Df Runner[36261:19610] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-11-01 16:49:15.810 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-11-01 16:49:15.810 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-11-01 16:49:15.811 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x60000210e8a0>
+2026-11-01 16:49:15.811 Df Runner[36261:19610] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-11-01 16:49:15.811 A  Runner[36261:1973e] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:15.813 Df Runner[36261:1973c] [com.apple.runningboard:connection] Handshake succeeded
+2026-11-01 16:49:15.813 Df Runner[36261:1973c] [com.apple.runningboard:connection] Identity resolved as app<dev.mint.mint((null))>
+2026-11-01 16:49:15.814 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x60000210e8a0>
+2026-11-01 16:49:15.815 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x6000017057c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1339 (elapsed = 0).
+2026-11-01 16:49:15.815 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-11-01 16:49:15.816 Df Runner[36261:19610] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x60000020f840; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-11-01 16:49:15.816 Df Runner[36261:19610] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x6000030002d0 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-11-01 16:49:15.817 Df Runner[36261:19610] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x6000030002d0 com.apple.frontboard.systemappservices> sent handshake
+2026-11-01 16:49:15.818 Df Runner[36261:19610] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x60000020fa60>
+2026-11-01 16:49:15.843 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-11-01 16:49:15.844 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-11-01 16:49:15.845 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:15.848 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:15.850 Df Runner[36261:19610] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x1055083a0> for initial
+2026-11-01 16:49:15.851 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-11-01 16:49:15.851 Df Runner[36261:19610] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x1055083a0> for CADisplay KVO
+2026-11-01 16:49:15.853 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-11-01 16:49:15.853 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-11-01 16:49:15.854 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-11-01 16:49:15.857 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:15.857 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-11-01 16:49:15.857 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-11-01 16:49:15.858 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:15.858 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-11-01 16:49:15.859 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-11-01 16:49:15.860 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:15.862 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-11-01 16:49:15.862 Df Runner[36261:19610] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-11-01 16:49:15.863 Df Runner[36261:19610] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-11-01 16:49:15.865 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-11-01 16:49:15.867 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:15.868 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-11-01 16:49:15.873 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-11-01 16:49:15.873 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-11-01 16:49:15.873 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:15.874 Df Runner[36261:19739] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-11-01 16:49:15.876 Df Runner[36261:1973e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-11-01 16:49:15.879 Df Runner[36261:1973e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-11-01 16:49:15.974 Df Runner[36261:1973e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-11-01 16:49:15.974 Df Runner[36261:1973e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-11-01 16:49:15.974 Df Runner[36261:1973e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-11-01 16:49:16.028 Df Runner[36261:19610] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-11-01 16:49:16.028 Df Runner[36261:19610] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:16.028 Df Runner[36261:19610] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:16.029 Df Runner[36261:19610] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:16.030 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-11-01 16:49:16.066 Df Runner[36261:19610] [com.apple.xpc:connection] [0x10700ac10] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:16.070 Df Runner[36261:19610] [com.apple.xpc:connection] [0x10700a670] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:16.070 Df Runner[36261:19610] [com.apple.xpc:connection] [0x10710e620] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:16.091 Df Runner[36261:19610] (Flutter) [IMPORTANT:flutter/shell/platform/darwin/graphics/FlutterDarwinContextMetalImpeller.mm(45)] Using the Impeller rendering backend (Metal).
+2026-11-01 16:49:16.167 Df Runner[36261:19739] [com.apple.xpc:connection] [0x10700e900] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-11-01 16:49:16.298 Df Runner[36261:19773] (Flutter) flutter: The Dart VM service is listening on http://127.0.0.1:59346/oBZ4n0ARQfY=/
+2026-11-01 16:49:16.820 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-11-01 16:49:16.821 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x6000017057c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1339 (elapsed = 1), _expireHandler: (null)
+2026-11-01 16:49:16.821 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x60000210e8a0> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x6000017057c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1339 (elapsed = 1))
+2026-11-01 16:49:16.821 Df Runner[36261:19739] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x60000210e8a0> for task identifier: 1
+2026-11-01 16:49:16.923 A  Runner[36261:1973c] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:17.837 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-11-01 16:49:17.843 Df Runner[36261:19610] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-11-01 16:49:17.843 Df Runner[36261:19610] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-11-01 16:49:17.843 Df Runner[36261:19610] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-11-01 16:49:17.853 Df Runner[36261:19610] [com.apple.xpc:connection] [0x10550b040] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-11-01 16:49:17.916 Df Runner[36261:19610] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-11-01 16:49:17.917 Df Runner[36261:19610] [com.apple.xpc:connection] [0x107125610] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-11-01 16:49:17.923 Df Runner[36261:19739] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-11-01 16:49:17.936 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Will add backgroundTask with taskName: Persistent SceneSession Map Update, expirationHandler: <__NSGlobalBlock__: 0x1e61729e0>
+2026-11-01 16:49:17.936 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-11-01 16:49:17.936 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-11-01 16:49:17.937 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x600002123390>
+2026-11-01 16:49:17.937 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x600002123390>
+2026-11-01 16:49:17.938 Df Runner[36261:19610] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x600001735500>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1341 (elapsed = 0).
+2026-11-01 16:49:17.940 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-11-01 16:49:17.940 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.945 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.946 Df Runner[36261:19610] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x600002907b10>; with scene: <UIWindowScene: 0x105516b30>
+2026-11-01 16:49:17.948 Df Runner[36261:19610] [com.apple.BacklightServices:scenes] 0x600000c2b450 setDelegate:<0x600000c30db0 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:dev.mint.mint-default
+2026-11-01 16:49:17.949 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.950 Df Runner[36261:19610] [com.apple.UIKit:EventDeferring] [0x600002907c60] Initialized with scene: <UIWindowScene: 0x105516b30>; behavior: <_UIEventDeferringBehavior_iOS: 0x60000028d0e0>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-11-01 16:49:17.952 Df Runner[36261:19739] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-11-01 16:49:17.952 Df Runner[36261:19610] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x6000026008a0; process scope; status: target> was:none
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPhone to LastOneWins
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x105516b30; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:EventDeferring] [0x600002907c60] Scene target of event deferring environments did update: scene: 0x105516b30; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x105516b30; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x600000c30ff0: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPhone to SystemShellManaged
+2026-11-01 16:49:17.953 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x105516b30; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x105516b30: Window scene became target of keyboard environment
+2026-11-01 16:49:17.955 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.956 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.957 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:17.964 E  Runner[36261:19610] [com.apple.UIKit:UIFocus] FlutterView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+2026-11-01 16:49:17.970 Df Runner[36261:19610] (Flutter) This FlutterEngine was already invoked.
+2026-11-01 16:49:18.093 Df Runner[36261:19610] [com.apple.UIKit:Orientation] <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC) Scene updated orientation preferences: none -> ( Pu Ll Lr )
+2026-11-01 16:49:18.098 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-11-01 16:49:18.098 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x105516b30: Window became key in scene: UIWindow: 0x105518370; contextId: 0x99C1364C: reason: UIWindowScene: 0x105516b30: Window requested to become key in scene: 0x105518370
+2026-11-01 16:49:18.098 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x105516b30; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x105518370; reason: UIWindowScene: 0x105516b30: Window requested to become key in scene: 0x105518370
+2026-11-01 16:49:18.098 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x105518370; contextId: 0x99C1364C; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:18.099 Df Runner[36261:19610] [com.apple.UIKit:EventDeferring] [0x600002907c60] Begin local event deferring requested for token: 0x600002612040; environments: 1; reason: UIWindowScene: 0x105516b30: Begin event deferring in keyboardFocus for window: 0x105518370
+2026-11-01 16:49:18.100 Df Runner[36261:19739] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x6000026008a0; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default; status: ancestor> was:target
+2026-11-01 16:49:18.101 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:18.133 Df Runner[36261:19610] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:18.133 Df Runner[36261:19610] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-11-01 16:49:18.134 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-11-01 16:49:18.137 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-11-01 16:49:18.138 Df Runner[36261:19610] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-11-01 16:49:18.140 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:18.141 Df Runner[36261:1973c] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-11-01 16:49:18.143 Df Runner[36261:19610] [com.apple.xpc:connection] [0x107116fa0] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-11-01 16:49:18.143 Df Runner[36261:1973c] [com.apple.xpc:session] [0x600002124050] Session created.
+2026-11-01 16:49:18.143 Df Runner[36261:1973c] [com.apple.xpc:session] [0x600002124050] Session created from connection [0x107130810]
+2026-11-01 16:49:18.143 Df Runner[36261:1973c] [com.apple.xpc:connection] [0x107130810] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-11-01 16:49:18.144 Df Runner[36261:1973c] [com.apple.xpc:session] [0x600002124050] Session activated
+2026-11-01 16:49:18.156 Df Runner[36261:19610] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [FAAC0AAD-D333-40F2-81D8-96336B19AC1C] (reporting strategy default)>
+2026-11-01 16:49:18.157 Df Runner[36261:19610] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [E470DA42-495A-4DC4-8DE4-ACAC013BFB57] (reporting strategy default)>
+2026-11-01 16:49:18.157 Df Runner[36261:19610] [com.apple.network:activity] Set activity <nw_activity 50:1 [FAAC0AAD-D333-40F2-81D8-96336B19AC1C] (reporting strategy default)> as the global parent
+2026-11-01 16:49:18.163 A  Runner[36261:1973e] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:18.173 A  Runner[36261:1973c] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:18.273 A  Runner[36261:1973e] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:18.371 Df Runner[36261:19610] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-11-01 16:49:18.373 Df Runner[36261:19610] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:18.373 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:18.374 Df Runner[36261:19610] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-11-01 16:49:18.374 Df Runner[36261:19610] [com.apple.UIKit:EventDeferring] [0x600002907c60] Scene target of event deferring environments did update: scene: 0x105516b30; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-11-01 16:49:18.374 Df Runner[36261:19610] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x105516b30; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:18.377 Df Runner[36261:19610] [com.apple.FrontBoard:SceneExtension] Realizing settings extension SBUISecureRenderingSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:18.380 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:18.381 Df Runner[36261:19610] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105516b30> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:18.381 Df Runner[36261:19610] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:18.381 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-11-01 16:49:18.382 Df Runner[36261:19610] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-11-01 16:49:18.382 Df Runner[36261:19610] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-11-01 16:49:18.385 Df Runner[36261:19610] [com.apple.KeyboardArbiter:Client] startConnection
+2026-11-01 16:49:18.387 Df Runner[36261:19610] [com.apple.xpc:connection] [0x10710cf20] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-11-01 16:49:18.408 Df Runner[36261:19610] (Flutter) flutter: IosLiquidGlass available=true nativeBackButton=true ios=26.2
+2026-11-01 16:49:18.457 Df Runner[36261:1973e] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 2
+2026-11-01 16:49:18.457 Df Runner[36261:1973e] [com.apple.UIKit:BackgroundTask] Ending task with identifier 2 and description: <_UIBackgroundTaskInfo: 0x600001735500>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1341 (elapsed = 1), _expireHandler: <__NSGlobalBlock__: 0x1e61729e0>
+2026-11-01 16:49:18.457 Df Runner[36261:1973e] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x600002123390> (used by background task with identifier 2: <_UIBackgroundTaskInfo: 0x600001735500>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1341 (elapsed = 1))
+2026-11-01 16:49:18.457 Df Runner[36261:1973e] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x600002123390> for task identifier: 2
+2026-11-01 16:49:18.973 Df Runner[36261:1973e] [com.apple.xpc:connection] [0x107129740] activating connection: mach=true listener=false peer=false name=com.apple.distributed_notifications@1v3
+2026-11-01 16:49:20.279 Df Runner[36261:19610] (Flutter) flutter: mint env hooks: page=null theme=null mode=null
+2026-11-01 16:49:20.290 Df Runner[36261:19610] (Flutter) flutter: mint test hooks: page= themeMode=dark backMenu=false
+2026-11-01 16:49:20.376 Df Runner[36261:19774] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2026-11-01 16:49:20.378 Df Runner[36261:19774] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2026-11-01 16:49:20.383 Df Runner[36261:19774] [com.apple.network:path] nw_path_libinfo_path_check [13B49105-D687-41A9-88BB-26DFA44567EA Hostname#210da892:0 tcp, legacy-socket, attribution: developer]
+	libinfo check path: satisfied (Path is satisfied), interface: en0
+2026-11-01 16:49:20.403 Df Runner[36261:19610] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-11-01 16:49:20.408 Df Runner[36261:19610] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-11-01 16:49:21.753 E  Runner[36261:19610] [com.apple.UIKit:UIFocus] FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+2026-11-01 16:49:22.437 Df Runner[36261:19610] [com.apple.runningboard:connection] Creating side-channel connection to com.apple.runningboard
+2026-11-01 16:49:22.437 Df Runner[36261:19610] [com.apple.xpc:connection] [0x107164d80] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-11-01 16:49:22.438 Df Runner[36261:19610] [com.apple.runningboard:process] Hit the server for a process handle 11989dff00008da5 that resolved to: [app<dev.mint.mint((null))>:36261]
+2026-11-01 16:49:22.607 A  Runner[36261:19974] (Security) SecTrustEvaluateIfNecessary
+2026-11-01 16:49:22.617 Df Runner[36261:19974] [com.apple.securityd:keychain] System Keychain Always Supported set via feature flag to disabled
+2026-11-01 16:49:22.618 Df Runner[36261:19974] [com.apple.xpc:connection] [0x107079ab0] activating connection: mach=true listener=false peer=false name=com.apple.trustd
+2026-11-01 16:49:22.619 Df Runner[36261:19974] [com.apple.xpc:connection] [0x107071ea0] activating connection: mach=true listener=false peer=false name=com.apple.trustd
+2026-11-01 16:49:22.746 Df Runner[36261:19974] [com.apple.xpc:connection] [0x107071ea0] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-11-01 16:49:22.894 E  Runner[36261:19979] [com.apple.UIKit:Graphics] UIColor created with component values far outside the expected range. Set a breakpoint on UIColorBreakForOutOfRangeColorComponents to debug. This message will only be logged once.
+2026-11-01 16:49:22.927 Df Runner[36261:19610] [com.apple.network:activity] <nw_activity 50:1 [FAAC0AAD-D333-40F2-81D8-96336B19AC1C] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 9268ms
+2026-11-01 16:49:22.927 Df Runner[36261:19610] [com.apple.network:activity] <nw_activity 50:2 [E470DA42-495A-4DC4-8DE4-ACAC013BFB57] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 9268ms
+2026-11-01 16:49:22.927 Df Runner[36261:19610] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [FAAC0AAD-D333-40F2-81D8-96336B19AC1C] (global parent) (reporting strategy default) complete (reason success)>
+2026-11-01 16:49:22.927 Df Runner[36261:19610] [com.apple.network:activity] Unset the global parent activity
+2026-11-01 16:49:22.989 Df Runner[36261:1997c] [com.apple.network:path] nw_path_libinfo_path_check [510E8BCE-D8D9-4570-AE3E-7D39B7FF2634 Hostname#3843cc2e:0 tcp, legacy-socket, attribution: developer]
+	libinfo check path: satisfied (Path is satisfied), interface: en0
+2026-11-01 16:49:23.038 A  Runner[36261:19974] (Security) SecTrustEvaluateIfNecessary
+2026-11-01 16:49:23.042 Df Runner[36261:19974] [com.apple.xpc:connection] [0x1070219b0] activating connection: mach=true listener=false peer=false name=com.apple.trustd
+2026-11-01 16:49:23.071 Df Runner[36261:19974] [com.apple.xpc:connection] [0x1070219b0] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-11-01 16:49:35.713 Df Runner[36965:19d07] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-11-01 16:49:35.713 Df Runner[36965:19d3b] [com.apple.xpc:connection] [0x1014051c0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-11-01 16:49:35.715 Df Runner[36965:19d3e] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-11-01 16:49:35.716 Df Runner[36965:19d3e] [com.apple.xpc:connection] [0x101205fc0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-11-01 16:49:35.722 A  Runner[36965:19d3c] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-11-01 16:49:35.733 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-11-01 16:49:35.733 Df Runner[36965:19d07] [com.apple.runningboard:connection] Initializing connection
+2026-11-01 16:49:35.734 Df Runner[36965:19d07] [com.apple.runningboard:process] Removing all cached process handles
+2026-11-01 16:49:35.734 Df Runner[36965:19d07] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-11-01 16:49:35.734 Df Runner[36965:19d3b] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-11-01 16:49:35.734 Df Runner[36965:19d07] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-11-01 16:49:35.734 Df Runner[36965:19d3b] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-11-01 16:49:35.734 Df Runner[36965:19d41] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-11-01 16:49:35.735 Df Runner[36965:19d3b] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x60000210a120>
+2026-11-01 16:49:35.735 Df Runner[36965:19d3b] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-11-01 16:49:35.735 Df Runner[36965:19d3b] [com.apple.xpc:connection] [0x10150b4d0] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-11-01 16:49:35.736 Df Runner[36965:19d07] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-11-01 16:49:35.738 A  Runner[36965:19d42] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:35.738 Df Runner[36965:19d07] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x600000206ba0; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-11-01 16:49:35.738 Df Runner[36965:19d07] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x600003008120 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-11-01 16:49:35.739 Df Runner[36965:19d41] [com.apple.runningboard:connection] Handshake succeeded
+2026-11-01 16:49:35.739 Df Runner[36965:19d41] [com.apple.runningboard:connection] Identity resolved as app<dev.mint.mint((null))>
+2026-11-01 16:49:35.739 Df Runner[36965:19d07] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x600003008120 com.apple.frontboard.systemappservices> sent handshake
+2026-11-01 16:49:35.740 Df Runner[36965:19d07] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x60000020b9a0>
+2026-11-01 16:49:35.741 Df Runner[36965:19d3b] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x60000210a120>
+2026-11-01 16:49:35.741 Df Runner[36965:19d3b] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x6000017023c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1359 (elapsed = 0).
+2026-11-01 16:49:35.742 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-11-01 16:49:35.744 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-11-01 16:49:35.744 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-11-01 16:49:35.745 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:35.745 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:35.746 Df Runner[36965:19d07] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x1012066c0> for initial
+2026-11-01 16:49:35.747 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-11-01 16:49:35.747 Df Runner[36965:19d07] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x1012066c0> for CADisplay KVO
+2026-11-01 16:49:35.748 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-11-01 16:49:35.749 Df Runner[36965:19d07] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-11-01 16:49:35.749 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-11-01 16:49:35.749 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d07] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-11-01 16:49:35.750 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-11-01 16:49:35.751 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-11-01 16:49:35.752 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-11-01 16:49:35.752 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-11-01 16:49:35.752 Df Runner[36965:19d3b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-11-01 16:49:35.752 Df Runner[36965:19d3e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-11-01 16:49:35.755 Df Runner[36965:19d3e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-11-01 16:49:35.774 Df Runner[36965:19d07] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-11-01 16:49:35.775 Df Runner[36965:19d07] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:35.776 Df Runner[36965:19d07] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:35.776 Df Runner[36965:19d07] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-11-01 16:49:35.778 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-11-01 16:49:35.783 Df Runner[36965:19d3e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-11-01 16:49:35.784 Df Runner[36965:19d3e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-11-01 16:49:35.784 Df Runner[36965:19d3e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-11-01 16:49:35.815 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x1012096e0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:35.819 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x1014084c0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:35.819 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x101510710] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-11-01 16:49:35.823 Df Runner[36965:19d07] (Flutter) [IMPORTANT:flutter/shell/platform/darwin/graphics/FlutterDarwinContextMetalImpeller.mm(45)] Using the Impeller rendering backend (Metal).
+2026-11-01 16:49:35.855 Df Runner[36965:19d3f] [com.apple.xpc:connection] [0x10140e000] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-11-01 16:49:35.919 Df Runner[36965:19d52] (Flutter) flutter: The Dart VM service is listening on http://127.0.0.1:59645/4zrn2oGnGR0=/
+2026-11-01 16:49:36.250 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-11-01 16:49:36.252 Df Runner[36965:19d07] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-11-01 16:49:36.252 Df Runner[36965:19d07] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-11-01 16:49:36.252 Df Runner[36965:19d07] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-11-01 16:49:36.258 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Will add backgroundTask with taskName: Persistent SceneSession Map Update, expirationHandler: <__NSGlobalBlock__: 0x1e61729e0>
+2026-11-01 16:49:36.258 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Reusing background assertion <BKSProcessAssertion: 0x60000210a120>
+2026-11-01 16:49:36.258 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x60000210a120>
+2026-11-01 16:49:36.258 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x60000172d980>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1359 (elapsed = 0).
+2026-11-01 16:49:36.258 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-11-01 16:49:36.259 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.259 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.259 Df Runner[36965:19d07] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x600002913640>; with scene: <UIWindowScene: 0x10140afa0>
+2026-11-01 16:49:36.260 Df Runner[36965:19d07] [com.apple.BacklightServices:scenes] 0x600000c3b420 setDelegate:<0x600000c3b510 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:dev.mint.mint-default
+2026-11-01 16:49:36.260 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.260 Df Runner[36965:19d07] [com.apple.UIKit:EventDeferring] [0x6000029136b0] Initialized with scene: <UIWindowScene: 0x10140afa0>; behavior: <_UIEventDeferringBehavior_iOS: 0x600000287fc0>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-11-01 16:49:36.260 Df Runner[36965:19d07] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-11-01 16:49:36.261 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x10151df30] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-11-01 16:49:36.262 Df Runner[36965:19d07] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x60000260f960; process scope; status: target> was:none
+2026-11-01 16:49:36.262 Df Runner[36965:19d3e] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPhone to LastOneWins
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x10140afa0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:EventDeferring] [0x6000029136b0] Scene target of event deferring environments did update: scene: 0x10140afa0; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10140afa0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x600000c26e20: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPhone to SystemShellManaged
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10140afa0; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x10140afa0: Window scene became target of keyboard environment
+2026-11-01 16:49:36.263 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.264 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.264 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.265 E  Runner[36965:19d07] [com.apple.UIKit:UIFocus] FlutterView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+2026-11-01 16:49:36.266 Df Runner[36965:19d07] (Flutter) This FlutterEngine was already invoked.
+2026-11-01 16:49:36.309 Df Runner[36965:19d07] [com.apple.UIKit:Orientation] <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC) Scene updated orientation preferences: none -> ( Pu Ll Lr )
+2026-11-01 16:49:36.312 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-11-01 16:49:36.312 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x10140afa0: Window became key in scene: UIWindow: 0x101223e40; contextId: 0xF53EEBC0: reason: UIWindowScene: 0x10140afa0: Window requested to become key in scene: 0x101223e40
+2026-11-01 16:49:36.313 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10140afa0; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x101223e40; reason: UIWindowScene: 0x10140afa0: Window requested to become key in scene: 0x101223e40
+2026-11-01 16:49:36.313 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x101223e40; contextId: 0xF53EEBC0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:36.313 Df Runner[36965:19d07] [com.apple.UIKit:EventDeferring] [0x6000029136b0] Begin local event deferring requested for token: 0x6000026130c0; environments: 1; reason: UIWindowScene: 0x10140afa0: Begin event deferring in keyboardFocus for window: 0x101223e40
+2026-11-01 16:49:36.315 Df Runner[36965:19d3f] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-11-01 16:49:36.317 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.320 Df Runner[36965:19d3e] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x60000260f960; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default; status: ancestor> was:target
+2026-11-01 16:49:36.329 Df Runner[36965:19d07] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:36.330 Df Runner[36965:19d07] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-11-01 16:49:36.330 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-11-01 16:49:36.332 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-11-01 16:49:36.333 Df Runner[36965:19d07] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-11-01 16:49:36.334 Df Runner[36965:19d3e] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-11-01 16:49:36.334 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.335 Df Runner[36965:19d3e] [com.apple.xpc:session] [0x6000021159a0] Session created.
+2026-11-01 16:49:36.335 Df Runner[36965:19d3e] [com.apple.xpc:session] [0x6000021159a0] Session created from connection [0x10150ccd0]
+2026-11-01 16:49:36.335 Df Runner[36965:19d3e] [com.apple.xpc:connection] [0x10150ccd0] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-11-01 16:49:36.336 Df Runner[36965:19d3e] [com.apple.xpc:session] [0x6000021159a0] Session activated
+2026-11-01 16:49:36.337 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x101224a60] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-11-01 16:49:36.341 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x10140eb90] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-11-01 16:49:36.343 A  Runner[36965:19d3e] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:36.376 Df Runner[36965:19d07] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [CFE60A51-ADB6-4181-8B58-5F55A7872A98] (reporting strategy default)>
+2026-11-01 16:49:36.376 Df Runner[36965:19d07] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [7E75FC28-3F9F-488D-B124-488452A4AC04] (reporting strategy default)>
+2026-11-01 16:49:36.376 Df Runner[36965:19d07] [com.apple.network:activity] Set activity <nw_activity 50:1 [CFE60A51-ADB6-4181-8B58-5F55A7872A98] (reporting strategy default)> as the global parent
+2026-11-01 16:49:36.376 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-11-01 16:49:36.377 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x6000017023c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1359 (elapsed = 1), _expireHandler: (null)
+2026-11-01 16:49:36.377 Df Runner[36965:19d07] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x60000210a120> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x6000017023c0>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1359 (elapsed = 1))
+2026-11-01 16:49:36.463 Df Runner[36965:19d07] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:36.464 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.464 Df Runner[36965:19d07] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-11-01 16:49:36.464 Df Runner[36965:19d07] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-11-01 16:49:36.464 Df Runner[36965:19d07] [com.apple.UIKit:EventDeferring] [0x6000029136b0] Scene target of event deferring environments did update: scene: 0x10140afa0; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-11-01 16:49:36.464 Df Runner[36965:19d07] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10140afa0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Adev.mint.mint-default
+2026-11-01 16:49:36.466 Df Runner[36965:19d07] [com.apple.FrontBoard:SceneExtension] Realizing settings extension SBUISecureRenderingSettingsExtension on FBSSceneSettings
+2026-11-01 16:49:36.466 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.467 Df Runner[36965:19d07] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10140afa0> (6B8E9023-1D8A-4A6E-902D-5A092D17A8FC)
+2026-11-01 16:49:36.467 Df Runner[36965:19d07] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:dev.mint.mint-default  persistentID: 6B8E9023-1D8A-4A6E-902D-5A092D17A8FC
+2026-11-01 16:49:36.467 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-11-01 16:49:36.467 Df Runner[36965:19d07] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-11-01 16:49:36.468 Df Runner[36965:19d07] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-11-01 16:49:36.480 Df Runner[36965:19d07] [com.apple.KeyboardArbiter:Client] startConnection
+2026-11-01 16:49:36.481 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x10150d8e0] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-11-01 16:49:36.498 Df Runner[36965:19d07] (Flutter) flutter: IosLiquidGlass available=true nativeBackButton=true ios=26.2
+2026-11-01 16:49:36.598 Df Runner[36965:19d3f] [com.apple.xpc:connection] [0x10140e930] activating connection: mach=true listener=false peer=false name=com.apple.distributed_notifications@1v3
+2026-11-01 16:49:36.761 Df Runner[36965:19d3f] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 2
+2026-11-01 16:49:36.761 Df Runner[36965:19d3f] [com.apple.UIKit:BackgroundTask] Ending task with identifier 2 and description: <_UIBackgroundTaskInfo: 0x60000172d980>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1359 (elapsed = 1), _expireHandler: <__NSGlobalBlock__: 0x1e61729e0>
+2026-11-01 16:49:36.761 Df Runner[36965:19d3f] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x60000210a120> (used by background task with identifier 2: <_UIBackgroundTaskInfo: 0x60000172d980>: taskID = 2, taskName = Persistent SceneSession Map Update, creationTime = 1359 (elapsed = 1))
+2026-11-01 16:49:36.761 Df Runner[36965:19d3f] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x60000210a120> for task identifier: 2
+2026-11-01 16:49:36.853 Df Runner[36965:19d07] (Flutter) flutter: mint env hooks: page=null theme=null mode=null
+2026-11-01 16:49:36.861 Df Runner[36965:19d07] (Flutter) flutter: mint test hooks: page=content themeMode=light backMenu=false
+2026-11-01 16:49:36.872 A  Runner[36965:19d3f] (RunningBoardServices) didChangeInheritances
+2026-11-01 16:49:36.879 Df Runner[36965:19d07] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-11-01 16:49:36.881 Df Runner[36965:19d07] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-11-01 16:49:37.761 E  Runner[36965:19d07] [com.apple.UIKit:UIFocus] FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+2026-11-01 16:49:38.010 Df Runner[36965:19d07] [com.apple.runningboard:connection] Creating side-channel connection to com.apple.runningboard
+2026-11-01 16:49:38.010 Df Runner[36965:19d07] [com.apple.xpc:connection] [0x101260530] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-11-01 16:49:38.011 Df Runner[36965:19d07] [com.apple.runningboard:process] Hit the server for a process handle 3a5735d00009065 that resolved to: [app<dev.mint.mint((null))>:36965]
+2026-11-01 16:49:39.183 E  Runner[36965:19d07] [com.apple.UIKit:UIFocus] FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+2026-11-01 16:49:39.376 Df Runner[36965:19d07] [com.apple.network:activity] <nw_activity 50:1 [CFE60A51-ADB6-4181-8B58-5F55A7872A98] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5003ms
+2026-11-01 16:49:39.376 Df Runner[36965:19d07] [com.apple.network:activity] <nw_activity 50:2 [7E75FC28-3F9F-488D-B124-488452A4AC04] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5003ms
+2026-11-01 16:49:39.376 Df Runner[36965:19d07] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [CFE60A51-ADB6-4181-8B58-5F55A7872A98] (global parent) (reporting strategy default) complete (reason success)>
+2026-11-01 16:49:39.376 Df Runner[36965:19d07] [com.apple.network:activity] Unset the global parent activity

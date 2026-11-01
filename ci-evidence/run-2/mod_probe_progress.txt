@@ -1,0 +1,9 @@
+=== iOS mod install probe 2026-11-01T16:49:20.320214 ===
+[1] version=1.20.4 isolated=false
+[2] modsDir=/Users/runner/Library/Developer/CoreSimulator/Devices/F5C4661C-7B05-4238-BF71-BF2845D2630A/data/Containers/Data/Application/D81E9C4E-B604-4BC8-8AB6-BCC3FEABFA63/Documents/MintLauncher/minecraft/mods
+[1] 查询 Modrinth 项目 fabric-api …
+    可用版本 22 个
+    选中 [1.20.4] Fabric API 0.97.3+1.20.4 0.97.3+1.20.4 → fabric-api-0.97.3+1.20.4.jar (2187523B)
+    下载 fabric-api-0.97.3+1.20.4.jar（2.1MB）…
+    ✅ 已安装到 /Users/runner/Library/Developer/CoreSimulator/Devices/F5C4661C-7B05-4238-BF71-BF2845D2630A/data/Containers/Data/Application/D81E9C4E-B604-4BC8-8AB6-BCC3FEABFA63/Documents/MintLauncher/minecraft/mods/fabric-api-0.97.3+1.20.4.jar
+    ✅ /Users/runner/Library/Developer/CoreSimulator/Devices/F5C4661C-7B05-4238-BF71-BF2845D2630A/data/Containers/Data/Application/D81E9C4E-B604-4BC8-8AB6-BCC3FEABFA63/Documents/MintLauncher/minecraft/mods/fabric-api-0.97.3+1.20.4.jar (2187523 B)
