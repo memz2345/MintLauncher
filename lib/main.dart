@@ -22,6 +22,7 @@ import 'package:mint/services/launcher/ios_data_dir.dart'
 import 'package:mint/services/launcher/ios_game_launch_probe.dart'
     show IosGameLaunchProbe;
 import 'package:mint/services/launcher/ios_jvm_probe.dart' show IosJvmProbe;
+import 'package:mint/services/launcher/ios_mod_probe.dart' show IosModProbe;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
 import 'package:mint/services/settings_service.dart';
@@ -258,6 +259,12 @@ Future<void> main(List<String> args) async {
 
   final controller = LauncherController(settings: settings);
   await controller.init();
+
+  // CI Mod 安装探针：沙盒 Documents/mod_probe.json 存在时，在应用进程里
+  // 走真实 Modrinth 下载链路，装进当前版本对应的 mods 目录。
+  if (iosDocsPath != null) {
+    IosModProbe.maybeRun(iosDocsPath, controller.gameDir, settings);
+  }
 
   if (_kTestFakeLogs) {
     const gameLines = [
