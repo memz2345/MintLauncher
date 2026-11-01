@@ -17,14 +17,14 @@ BUILD="$ROOT/build/ios-game"
 VERSION="${MINT_PROBE_VERSION:-1.20.4}"
 mkdir -p "$BUILD"
 
-echo "==== 1. 宿主安装 Minecraft $VERSION（e2e 工具链 --install-only）===="
+echo "==== 1. 宿主安装 Minecraft ${VERSION}（e2e 工具链 --install-only）===="
 MINT_E2E_MIRROR=official dart run tool/e2e_launch_test.dart "$VERSION" \
   --install-only 2>&1 | tee "$BUILD/e2e-install.log"
 
 GAME="$HOME/Library/Application Support/MintLauncher/minecraft"
 JAR="$GAME/versions/$VERSION/$VERSION.jar"
 if [ ! -f "$JAR" ]; then
-  echo "!! 没找到 $JAR（宿主安装失败？看 $BUILD/e2e-install.log）"
+  echo "!! 没找到 ${JAR}（宿主安装失败？看 $BUILD/e2e-install.log）"
   exit 1
 fi
 

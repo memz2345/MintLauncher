@@ -312,6 +312,10 @@ class IosJvmProbe {
       if (mainClass == nullptr) return null;
       final clsClass = getObjectClass(env, mainClass);
       final methodId = getMethodId(env, clsClass, getName, sig);
+      if (methodId == nullptr) {
+        if (exceptionOccurred(env) != nullptr) exceptionClear(env);
+        return null;
+      }
       // 无参调用：jvalue* 传 NULL 合法。
       final value = callObjectMethodA(env, mainClass, methodId, nullptr);
       if (value == nullptr) return null;
