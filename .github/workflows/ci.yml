@@ -203,7 +203,10 @@ jobs:
               # 内进程对主机可见）。
               sleep 1
               local pid
-              pid=$(head -1 "build/shots/console-$name.log" | sed -E 's/.*: *//')
+              # --console-pty 的首行不一定是 "dev.mint.mint: pid"（前面可能
+              # 有启动日志），按行内匹配取 PID，死了才能触发重拉。
+              pid=$(grep -m1 -oE 'dev\.mint\.mint: [0-9]+' \
+                "build/shots/console-$name.log" | grep -oE '[0-9]+' || true)
               local ok=0
               for _ in $(seq 1 48); do
                 sleep 5
@@ -213,10 +216,10 @@ jobs:
                   break
                 fi
                 xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
-                # 白屏（只有状态栏）PNG 约 70KB；真实页面（壁纸/内容）>1MB。
-                # 200KB 门槛能把「应用还在启动 / 被 watchdog 杀」的假截图挡掉。
+                # 白屏（只有状态栏）≈70KB、SpringBoard 桌面 ≈490KB；真实页面
+                # （主题壁纸 + 内容）>1.3MB。800KB 门槛把两种假截图都挡掉。
                 if [ -f "build/shots/ios-$name.png" ] &&
-                   [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 200000 ]; then
+                   [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 800000 ]; then
                   ok=1
                   break
                 fi
@@ -228,7 +231,7 @@ jobs:
                 local stable="build/shots/ios-$name-stable.png"
                 xcrun simctl io "$UDID" screenshot "$stable" || true
                 if [ -f "$stable" ] &&
-                   [ "$(stat -f%z "$stable")" -gt 200000 ]; then
+                   [ "$(stat -f%z "$stable")" -gt 800000 ]; then
                   mv "$stable" "build/shots/ios-$name.png"
                 fi
                 rm -f "$stable"
@@ -283,13 +286,13 @@ jobs:
           chmod +x "$AXE_DIR/axe"
           xattr -dr com.apple.quarantine "$AXE_DIR" 2>/dev/null || true
           export DYLD_FRAMEWORK_PATH="$AXE_DIR/Frameworks"
-          # UIContextMenuInteraction 要的是「按住 1.2 秒再松」，用 touch
-          # down/up + delay，不是普通 tap。
-          "$AXE_DIR/axe" touch -x 48 -y 140 --down --up --delay 1.2 \
-            --udid "$UDID" || true
-          sleep 2
+          # UIContextMenuInteraction 要在手指按住期间才展开；先 down，
+          # 等 1.4 秒截菜单，再 up（一次性 down/up 松手时菜单可能已经收起）。
+          "$AXE_DIR/axe" touch -x 48 -y 140 --down --udid "$UDID" || true
+          sleep 1.4
           xcrun simctl io "$UDID" screenshot \
             build/shots/ios-backmenu-native.png || true
+          "$AXE_DIR/axe" touch -x 48 -y 140 --up --udid "$UDID" || true
           xcrun simctl terminate "$UDID" dev.mint.mint 2>/dev/null || true
 
       # 「试一下能不能启动游戏」第一性实验：模拟器的 dlopen 强制校验
