@@ -213,8 +213,10 @@ jobs:
                   break
                 fi
                 xcrun simctl io "$UDID" screenshot "build/shots/ios-$name.png" || true
+                # 白屏（只有状态栏）PNG 约 70KB；真实页面（壁纸/内容）>1MB。
+                # 200KB 门槛能把「应用还在启动 / 被 watchdog 杀」的假截图挡掉。
                 if [ -f "build/shots/ios-$name.png" ] &&
-                   [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 100000 ]; then
+                   [ "$(stat -f%z "build/shots/ios-$name.png")" -gt 200000 ]; then
                   ok=1
                   break
                 fi

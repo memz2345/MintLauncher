@@ -142,8 +142,10 @@ Future<void> main(List<String> args) async {
   }
 
   // iOS 26 液态玻璃能力探测（缓存给同步取用）。
+  // 必须 await：顶栏按钮是在 build 里同步读 cachedAvailable 的，如果探测
+  // 还在飞，首帧就没有玻璃圆片；主题包导入会把这段延迟掩盖掉，但不能靠它。
   if (Platform.isIOS) {
-    unawaited(IosLiquidGlass.instance.available());
+    await IosLiquidGlass.instance.available();
   }
 
   final settings = SettingsService();

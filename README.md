@@ -801,15 +801,23 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   上一轮已实测：iOS 26 模拟器的 dlopen 强制校验平台标签，macOS 版
   libjvm 被拒（`incompatible platform (have 'macOS', need 'iOS-simulator')`）。
   本轮 `tool/ci/ios_jvm_probe.sh` 换路线：下载 Temurin macOS arm64 JRE →
-  用 `vtool` 把 JRE 里所有 Mach-O 的 `LC_BUILD_VERSION` 重打成
+  用 `vtool -arch arm64 -set-build-version 7 17.0 17.0 -replace`
+  （7 = XNU 的 IOSSIMULATOR 枚举）把 JRE 里所有 Mach-O 重打成
   **ios-simulator** → `codesign -s -` 重签 → 塞进沙盒 → 应用内 FFI
-  `dlopen` + `JNI_CreateJavaVM` + 经 JNI 调 `System.getProperty("java.version")`
-  （证明不只是虚拟机对象起来，Java 标准库代码真的能执行）。
-  **结论分层**：JVM 能在模拟器里起来 ≠ 游戏能启动 —— Minecraft 还需要
-  LWJGL/GLFW 的图形窗口后端（iOS 没有 macOS AppKit 那套 NSWindow），
-  所以**游戏本体仍不能启动**；真机仍是 Pojav 路线（设备版 OpenJDK +
-  JIT 特权 + MetalANGLE 渲染）。每轮证据写进
-  `build/shots/jvm_probe_result.txt`（artifact + Release）。
+  `dlopen` + `JNI_CreateJavaVM`。
+  **本轮实测结果（2026-11-01，run 34）**：
+  - `dlopen(libjvm.dylib)` **成功**（46 个 Mach-O 全部重签，平台校验通过）；
+  - `JNI_CreateJavaVM` 失败，VM 初始化时加载 `libjava.dylib` 被拒：
+    `Library not loaded: /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation`
+    —— macOS JRE 的 dylib 里硬编码的是 macOS 的 `Versions/A` 框架路径，
+    iOS 模拟器 runtime 里没有这条路径。**这证明「只重打平台标签」不够**，
+    必须按 **iOS-simulator 目标真正编译 OpenJDK**（HOTSPOT 的 native
+    依赖链也要跟着目标重编）；社区暂无现成产物，这条路不作为本轮交付。
+  - 即使 JVM 能起来，Minecraft 还需要 LWJGL/GLFW 的图形窗口后端
+    （iOS 没有 macOS AppKit 那套 NSWindow），所以**游戏本体仍不能启动**；
+    真机仍是 Pojav 路线（设备版 OpenJDK + JIT 特权 + MetalANGLE 渲染）。
+  每轮证据写进 `build/shots/jvm_probe_result.txt` + `jvm-console.log` +
+  `jvm-unified-log.txt`（artifact + 公开 Release `ci-ios-shots`）。
 - **iOS 启动游戏 = 明确降级**：`GameLaunchSupport`（lib/services/launcher/
   launch_support.dart）统一平台能力表 —— iOS 沙盒禁 fork/exec，未接
   OpenJDK（Pojav 路线）前启动入口直接弹三风格说明框（OpenJDK 同进程
