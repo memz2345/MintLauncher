@@ -208,11 +208,10 @@ class IosJvmProbe {
       written++;
       // <destRoot>/<jdk>/Contents/Home/lib/server/libjvm.dylib
       if (entry.name.endsWith('/Contents/Home/lib/server/libjvm.dylib')) {
-        var dir = p.dirname(outPath); // .../server
-        for (var i = 0; i < 3; i++) {
-          dir = p.dirname(dir); // server → lib → Home（三次正好落在 Home）
-        }
-        home = dir;
+        buf.writeln('    命中条目: ${entry.name}');
+        final marker = '/Contents/Home/';
+        final idx = outPath.indexOf(marker);
+        home = outPath.substring(0, idx + marker.length - 1);
       }
     }
     buf.writeln('    写出 $written 个文件');
