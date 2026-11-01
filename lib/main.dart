@@ -19,6 +19,8 @@ import 'package:mint/services/launcher/android_data_dir.dart'
 import 'package:mint/services/launcher/game_dir.dart' as game_dir;
 import 'package:mint/services/launcher/ios_data_dir.dart'
     show iosDataDirLookup;
+import 'package:mint/services/launcher/ios_game_launch_probe.dart'
+    show IosGameLaunchProbe;
 import 'package:mint/services/launcher/ios_jvm_probe.dart' show IosJvmProbe;
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/log_window_service.dart';
@@ -237,6 +239,9 @@ Future<void> main(List<String> args) async {
   // 沙盒 jvm_probe_result.txt，CI 直接 cat。
   if (iosDocsPath != null) {
     IosJvmProbe.maybeRun(iosDocsPath);
+    // 第二轮实验：应用内构建启动命令 + posix_spawn macOS JVM 子进程
+    // 起真游戏（模拟器宿主专属路线，真机必须 Pojav 同进程 dlopen）。
+    IosGameLaunchProbe.maybeRun(iosDocsPath);
   }
   await ThemeFonts.load(settings);
   // 把应用内语言选择同步到 Android 13+ 的「应用语言」设置

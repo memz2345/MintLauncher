@@ -109,7 +109,11 @@ class LaunchCommand {
 class LaunchBuilder {
   const LaunchBuilder();
 
-  LaunchCommand build(LaunchOptions o) {
+  /// [expander] 可注入规则求值环境：iOS 启动探针给 **macOS 子进程** 构建
+  /// 命令时进程是 iOS，`osNameForCurrentPlatform()` 会落到 `linux`，osx 专属
+  /// 参数（`-XstartOnFirstThread`、`-Djava.library.path` 的 mac 块）就全丢了
+  /// —— 这里显式传 `ArgumentExpander(osName: 'osx', arch: 'arm64')`。
+  LaunchCommand build(LaunchOptions o, {ArgumentExpander? expander}) {
     final gameDir = o.gameDir;
     final gameHome = o.effectiveGameHome;
     final version = o.version;
@@ -178,7 +182,7 @@ class LaunchBuilder {
 
     if (useModernArgs) {
       // ── 1.13+：json 的 jvm 列表（规则求值 + ${} 替换）──
-      args.addAll(_expandArgumentList(version.jvmArguments, variables));
+      args.addAll(_expandArgumentList(version.jvmArguments, variables, expander));
     } else {
       // ── 老版本：自建 JVM 参数 ──
       if (!Platform.isWindows) {
@@ -200,7 +204,7 @@ class LaunchBuilder {
 
     // ── 游戏参数 ──
     if (version.gameArguments.isNotEmpty) {
-      args.addAll(_expandArgumentList(version.gameArguments, variables));
+      args.addAll(_expandArgumentList(version.gameArguments, variables, expander));
     }
     if (version.minecraftArguments.isNotEmpty) {
       // 1.12 及更早：整串参数模板，同样要替换 ${auth_player_name} /
@@ -293,8 +297,9 @@ class LaunchBuilder {
   /// 展开 1.13+ 参数列表（规则求值 + `${}` 替换，见 [ArgumentExpander]）。
   List<String> _expandArgumentList(
     List<dynamic> raw,
-    Map<String, String> variables,
-  ) => _expander.expand(raw, variables);
+    Map<String, String> variables, [
+    ArgumentExpander? expander,
+  ]) => (expander ?? _expander).expand(raw, variables);
 
   static final ArgumentExpander _expander = ArgumentExpander(
     osName: ArgumentExpander.osNameForCurrentPlatform(),

@@ -33,7 +33,7 @@
 |---|---|---|
 | Windows | ✅ 可用 | 普通 Java 进程（参考 HMCL） |
 | macOS / Linux | 🧪 CI 持续验证 | 同 Windows 逻辑；GitHub Actions 已实测：构建 / Xvfb / weston headless / KWin 模糊探针 / **游戏 e2e（1.20.4 安装 → 启动 → LWJGL 3.3.2 初始化 → 纯 CPU 渲染存活 90s）** |
-| iOS | 🧪 启动器 UI 已跑 | CI（macOS runner）构建 + iPhone 模拟器实跑截图；游戏启动对齐 PojavLauncher_iOS（OpenJDK 同进程 + MetalANGLE/gl4ES + JIT 特权），见「iOS」章节 |
+| iOS | 🧪 启动器 UI 已跑 | CI（macOS runner）构建 + iPhone 模拟器实跑截图；**游戏启动双探针**：应用内 posix_spawn 模拟器宿主子进程（模拟器专属）+ 同进程 dlopen JVM（真机 Pojav 路线：OpenJDK iOS + MetalANGLE/gl4ES + JIT 特权），见「iOS」章节 |
 | Android | 🧪 实验 | FCL 运行时（JRE8/JRE17 + LWJGL3/lwjglx + GL4ES），x86_64 模拟器与 arm64 真机均已跑通 1.7.10，targetSdk 37 |
 
 ## 界面（布局参考 FCL，标题栏移植自 local2api）
@@ -724,7 +724,7 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
 ## iOS（2026-10-31 起：启动器 UI 已在模拟器实跑，游戏启动未做）
 
 - **本轮范围**：Flutter iOS 平台接入 + CI（macOS runner）构建 + iPhone 模拟器
-  实跑截图（首页 / 设置 / 下载管理 / 深色四场景，artifact `ios-screenshots`）。
+  实跑截图（首页 / 设置 / 下载管理 / 深色等场景，artifact `ios-screenshots`）。
   下载中心、Modrinth 浏览、账户、版本管理、MIUI 主题包、三套界面风格这些
   **纯 Flutter 能力** iOS 直接可用（数据目录落在应用沙盒 `~/.mint_launcher`）；
   桌面窗口链路（windowManager / 窗口材质 / 自绘标题栏 / 虚拟触控 / 独立日志
@@ -758,7 +758,9 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   （按 UDID，跨 Xcode 镜像稳）→ `simctl install/launch`（`--console-pty`
   抓应用 stdout 做诊断，截图按文件大小轮询等首帧、**按 pid 存活判定
   watchdog 杀进程并自动重拉**——首启导入 126MB 主题包必被杀一次，第二拉
-  秒起）→ `simctl io screenshot` 四场景（artifact `ios-screenshots`）。
+  秒起）→ `simctl io screenshot` 五场景（artifact `ios-screenshots`；
+  **首页 = iOS 26 玻璃底栏、设置页 = 玻璃返回键**，对照 miuix 的
+  HyperOS 观感直接看这两张）。
   **主题素材**：截图前从 GitHub Release（`test-assets` tag 的 fu.mtz，
   126MB 不进仓库）下载主题包塞进沙盒 `Documents/import_theme.mtz`，
   应用启动时标记文件钩子自动导入并删除 —— 主题壁纸 / 主色染色 / 玻璃
@@ -798,26 +800,53 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
     能力探测在 `main.dart` 里 `await`，首帧就有正确的原生组件。
   - 页面标题注册不再只在 Windows/Linux 托管标题栏时做（iOS/Android 也
     注册），原生菜单才能显示「首页 / 设置」这种真实层级名。
-- **iOS 起 JVM 探针（「试一下能不能启动游戏」第一性实验，CI 每轮执行）**：
-  上一轮已实测：iOS 26 模拟器的 dlopen 强制校验平台标签，macOS 版
-  libjvm 被拒（`incompatible platform (have 'macOS', need 'iOS-simulator')`）。
-  本轮 `tool/ci/ios_jvm_probe.sh` 换路线：下载 Temurin macOS arm64 JRE →
+- **iOS 起游戏第二轮（2026-11-01）：应用内 posix_spawn + JVM 依赖改写**，
+  CI 每轮执行，两条线并进：
+  - **线 A ——「应用内启动游戏」探针**（`tool/ci/ios_stage_game.sh` +
+    `ios_probe_game.sh` + `lib/services/launcher/ios_game_launch_probe.dart`）：
+    模拟器进程本质是 **macOS 进程**，`posix_spawn` 没有真机的沙盒禁令
+    （真机禁 fork/exec，模拟器不禁）。宿主先用 e2e 工具链装好 1.20.4
+    （`--install-only`；natives 必须按宿主 macOS 选分类器，模拟器里装会
+    选错）、把 Adoptium JRE 21 mac/aarch64 与游戏目录塞进沙盒；应用内
+    `IosGameLaunchProbe` 走**真实链路** —— GameDir → 版本 json →
+    `LaunchBuilder` 构建命令（`LaunchOptions` 新增 expander 注入，iOS
+    进程里要显式按 `osName: 'osx'` 求值，否则 `-XstartOnFirstThread`
+    全丢）→ FFI `posix_spawn` 拉 macOS JVM 子进程 → 盯日志判定。
+    游戏窗口开在 **runner 桌面**（不在模拟器屏幕里），日志出现
+    `LWJGL version` 后 `screencapture` 连拍三张（`ios-host-game-*.png`）。
+    判定与 e2e 同款：LWJGL 行 = 成功，主类异常 = 失败，证据落
+    `game_probe_result.txt` + `game-launch-tail.log`。
+  - **线 B —— JVM 探针升级**（`tool/ci/ios_jvm_probe.sh`）：上一轮
+    `dlopen` 已过平台校验，`JNI_CreateJavaVM` 死在 libjava.dylib 硬编码的
+    `CoreFoundation.framework/Versions/A/...`（iOS runtime 框架是平铺的）。
+    本轮加**依赖改写**：直接改写成 runtimeRoot 绝对路径行不通 ——
+    `install_name_tool` 不允许把 load command 字符串改长（"larger updated
+    load commands do not fit"），而 runtimeRoot 前缀比 `/System/Library`
+    长得多。所以在根上建**短路径符号链接农场** `/m/mint-sim-jre/f00…`
+    （每个码 → 模拟器 runtime 的对应平铺框架，改写串恒短于原串），
+    vtool 重打平台标签 + 改写 + ad-hoc 重签之后再 dlopen +
+    `JNI_CreateJavaVM`；另外把 CI 预置的 1.20.4 客户端 jar 挂上
+    `java.class.path`，JVM 起来后 `FindClass(net/minecraft/client/main/Main)`
+    + `getName()` 验证 **MC 自己的字节码**能否在这个 JVM 里 define/load
+    （`IosJvmProbe._mcMainName`）。改写映射与缺失依赖审计落
+    `jvm-rewrite-map.txt` / `jvm-missing-deps.txt`。
+  - **两条线的边界**：线 A 是模拟器宿主专属的「作弊路线」（只有起进程
+    一步借了宿主身份，下载/安装/参数构建都是真实链路）；线 B 是真机
+    Pojav 路线的最底层实验。真机仍必须：iOS 目标 OpenJDK + JIT 特权 +
+    MetalANGLE/gl4ES 渲染（README 上文）。
+- **iOS 起 JVM 探针第一轮（2026-11-01，run 34）实测结论**：
+  iOS 26 模拟器的 dlopen 强制校验平台标签，macOS 版 libjvm 被拒
+  （`incompatible platform (have 'macOS', need 'iOS-simulator')`）；
   用 `vtool -arch arm64 -set-build-version 7 17.0 17.0 -replace`
   （7 = XNU 的 IOSSIMULATOR 枚举）把 JRE 里所有 Mach-O 重打成
-  **ios-simulator** → `codesign -s -` 重签 → 塞进沙盒 → 应用内 FFI
-  `dlopen` + `JNI_CreateJavaVM`。
-  **本轮实测结果（2026-11-01，run 34）**：
-  - `dlopen(libjvm.dylib)` **成功**（46 个 Mach-O 全部重签，平台校验通过）；
-  - `JNI_CreateJavaVM` 失败，VM 初始化时加载 `libjava.dylib` 被拒：
-    `Library not loaded: /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation`
-    —— macOS JRE 的 dylib 里硬编码的是 macOS 的 `Versions/A` 框架路径，
-    iOS 模拟器 runtime 里没有这条路径。**这证明「只重打平台标签」不够**，
-    必须按 **iOS-simulator 目标真正编译 OpenJDK**（HOTSPOT 的 native
-    依赖链也要跟着目标重编）；社区暂无现成产物，这条路不作为本轮交付。
-  - 即使 JVM 能起来，Minecraft 还需要 LWJGL/GLFW 的图形窗口后端
-    （iOS 没有 macOS AppKit 那套 NSWindow），所以**游戏本体仍不能启动**；
-    真机仍是 Pojav 路线（设备版 OpenJDK + JIT 特权 + MetalANGLE 渲染）。
-  每轮证据写进 `build/shots/jvm_probe_result.txt` + `jvm-console.log` +
+  **ios-simulator** + `codesign -s -` 重签后：`dlopen(libjvm.dylib)`
+  **成功**（46 个 Mach-O 全部通过），但 `JNI_CreateJavaVM` 失败，
+  VM 初始化时加载 `libjava.dylib` 被拒：
+  `Library not loaded: /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation`
+  —— macOS JRE 的 dylib 里硬编码的是 macOS 的 `Versions/A` 框架路径，
+  iOS 模拟器 runtime 里没有这条路径。**这证明「只重打平台标签」不够**
+  （→ 第二轮的依赖改写，见上）。每轮证据写进
+  `build/shots/jvm_probe_result.txt` + `jvm-console.log` +
   `jvm-unified-log.txt`（artifact + 公开 Release `ci-ios-shots`）。
 - **iOS 启动游戏 = 明确降级**：`GameLaunchSupport`（lib/services/launcher/
   launch_support.dart）统一平台能力表 —— iOS 沙盒禁 fork/exec，未接

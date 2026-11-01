@@ -1,11 +1,13 @@
 // 端到端冒烟测试（不依赖 Flutter UI）：
 //
-//   dart run tool/e2e_launch_test.dart [版本id] [--keep-running]
+//   dart run tool/e2e_launch_test.dart [版本id] [--keep-running] [--install-only]
 //
 // 流程：清单 → 安装（库/客户端/资源/natives）→ 找 Java（没有就下载 JRE）
 //       → 构建启动命令（离线账户）→ 起进程 → 观察输出 90 秒 → 结束。
 //
 // 默认使用启动器的真实游戏目录（GUI 之后再打开能直接看到装好的版本）。
+// --install-only：装完就停（CI 的 iOS 探针用 —— natives 必须按宿主 macOS
+// 选分类器，模拟器里装会选错；启动由应用内 IosGameLaunchProbe 负责）。
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -22,6 +24,7 @@ import 'package:mint/services/launcher/version_model.dart';
 Future<void> main(List<String> rawArgs) async {
   final args = rawArgs.toList();
   final keepRunning = args.remove('--keep-running');
+  final installOnly = args.remove('--install-only');
   final versionId = args.isEmpty ? null : args.first;
 
   final root = await GameDir.defaultGameDir();
@@ -69,6 +72,10 @@ Future<void> main(List<String> rawArgs) async {
     );
 
     // ── Java ──
+    if (installOnly) {
+      stdout.writeln('== --install-only：安装完成，跳过 Java 与启动');
+      return;
+    }
     stdout.writeln('== 检测 Java…');
     final javaService = JavaService(gameDir: gameDir);
     final json = jsonDecode(File(gameDir.versionJson(target)).readAsStringSync())

@@ -129,7 +129,7 @@ jobs:
     # macos-26 才带 Xcode 26（iOS 26 模拟器 runtime + UIGlassEffect）；
     # macos-15 及以下是 iOS 18 runtime，玻璃能力探测会如实降级为自绘。
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
 
@@ -263,11 +263,25 @@ jobs:
             --predicate 'process == "Runner"' --style compact \
             > build/shots/unified-log.txt 2>&1 || true
 
-      # 「试一下能不能启动游戏」第一性实验：模拟器的 dlopen 强制校验
-      # Mach-O 平台标签，先把 macOS JRE 重打成 ios-simulator + 重签，
-      # 再在应用内 dlopen + JNI_CreateJavaVM + 调 System.getProperty
-      # 验证「JVM 与 Java 代码」能跑。图形后端（LWJGL/GLFW）是下一环。
-      - name: iOS 起 JVM 探针（JRE 平台标签重签）
+      # ──「应用内启动游戏」探针（2026-11-01 第二轮实验）──
+      # 模拟器进程本质是 macOS 进程：posix_spawn 没有真机的沙盒禁令。
+      # 宿主先用 e2e 工具链装好 1.20.4（natives 按 macOS 选），塞进沙盒，
+      # 应用内 LaunchBuilder 构建命令（osx 规则）+ posix_spawn 拉 macOS
+      # JVM 子进程 —— 游戏窗口开在 runner 桌面，screencapture 连拍留证。
+      - name: 预置游戏目录 + JRE（iOS 启动探针素材）
+        timeout-minutes: 30
+        run: bash tool/ci/ios_stage_game.sh "${{ steps.sim.outputs.udid }}"
+
+      - name: iOS 应用内启动游戏（posix_spawn + 桌面连拍）
+        timeout-minutes: 15
+        run: bash tool/ci/ios_probe_game.sh "${{ steps.sim.outputs.udid }}"
+
+      # 「试一下能不能启动游戏」第一性实验（同进程 dlopen JVM 路线）：
+      # macOS JRE 重打 ios-simulator 平台标签后，JNI_CreateJavaVM 死在
+      # libjava.dylib 硬编码的 macOS 框架路径 —— 本轮加依赖改写：
+      # /m 符号链接农场映射到模拟器 runtime 的平铺框架（install_name_tool
+      # 不能改长字符串，改写串必须更短），再看 JVM 能不能真起来。
+      - name: iOS 起 JVM 探针（依赖改写 + MC 主类验证）
         run: bash tool/ci/ios_jvm_probe.sh "${{ steps.sim.outputs.udid }}"
 
       - name: 上传截图与诊断
@@ -297,7 +311,10 @@ jobs:
           fi
           for f in build/shots/jvm_probe_result.txt \
                    build/shots/jvm-console.log \
-                   build/shots/jvm-unified-log.txt; do
+                   build/shots/jvm-unified-log.txt \
+                   build/shots/game_probe_result.txt \
+                   build/shots/game-console.log \
+                   build/shots/game-launch-tail.log; do
             if [ -f "$f" ]; then
               gh release upload "$tag" "$f" --clobber || true
             fi

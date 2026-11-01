@@ -107,22 +107,32 @@ class IosJvmProbe {
             )
           >('JNI_CreateJavaVM');
 
-      final options = calloc<JavaVMOption>(2);
-      final homeOpt = '-Djava.home=$home'.toNativeUtf8();
-      final heapOpt = '-Xmx512m'.toNativeUtf8();
-      options[0].optionString = homeOpt.cast();
-      options[0].extraInfo = nullptr;
-      options[1].optionString = heapOpt.cast();
-      options[1].extraInfo = nullptr;
+      // CI 预置了 1.20.4 客户端 jar（Documents/mc-client.jar）时挂上
+      // class path：等下 FindClass(net/minecraft/client/main/Main) 走
+      // 应用类加载器，验证 MC 自己的字节码能在这个 JVM 里 define。
+      final mcJarPath = p.join(docsPath, 'mc-client.jar');
+      final hasMcJar = File(mcJarPath).existsSync();
+      final optStrings = <String>['-Djava.home=$home', '-Xmx512m'];
+      if (hasMcJar) optStrings.add('-Djava.class.path=$mcJarPath');
+      final options = calloc<JavaVMOption>(optStrings.length);
+      final optNatives = <Pointer<Utf8>>[];
+      for (var i = 0; i < optStrings.length; i++) {
+        final s = optStrings[i].toNativeUtf8();
+        optNatives.add(s);
+        options[i].optionString = s.cast();
+        options[i].extraInfo = nullptr;
+      }
       final args = calloc<JavaVMInitArgs>();
       args.ref.version = 0x00010008; // JNI_VERSION_1_8
-      args.ref.nOptions = 2;
+      args.ref.nOptions = optStrings.length;
       args.ref.options = options;
       args.ref.ignoreUnrecognized = 1;
 
       final vmOut = calloc<Pointer<Void>>();
       final envOut = calloc<Pointer<Void>>();
-      buf.writeln('[5] JNI_CreateJavaVM(JNI_VERSION_1_8, 2 options)...');
+      buf.writeln(
+        '[5] JNI_CreateJavaVM(JNI_VERSION_1_8, ${optStrings.length} options)',
+      );
       flush();
       final rc = create(vmOut, envOut, args);
       buf.writeln('    rc=$rc (${rc == 0 ? 'JNI_OK ✅' : '失败 ❌'})');
@@ -157,6 +167,28 @@ class IosJvmProbe {
       }
       flush();
 
+      // ── 7.5 MC 主类：FindClass 走应用类加载器（java.class.path 挂了
+      //    CI 预置的 1.20.4 客户端 jar）。能查到并调 getName() = MC 自己
+      //    的字节码能在这个 iOS 模拟器 JVM 里 define + load。
+      if (hasMcJar) {
+        try {
+          buf.writeln('[7.5] FindClass(net/minecraft/client/main/Main)');
+          flush();
+          final name = _mcMainName(env);
+          if (name == null) {
+            buf.writeln('    FindClass 返回 null（jar 里没有主类？）');
+          } else {
+            buf.writeln('    主类 = $name ✅（MC 字节码可 define/load）');
+          }
+        } catch (e) {
+          buf.writeln(
+            '!! [7.5] MC 主类加载失败（链接期依赖不在 class path 时属预期，'
+            '真实启动全部依赖都在 class path 上）: $e',
+          );
+        }
+        flush();
+      }
+
       // ── 8. JavaVM 函数表 DestroyJavaVM（index 3）正常收摊 ──
       final vm = vmOut.value;
       final vmTable = vm
@@ -180,6 +212,116 @@ class IosJvmProbe {
       Directory(p.join(docsPath, 'jvm_probe')).deleteSync(recursive: true);
       File(p.join(docsPath, 'jre21-mac.tar.gz')).deleteSync();
     } catch (_) {}
+  }
+
+  /// 走 JNI 查 `net/minecraft/client/main/Main` 并调它的 `getName()`
+  ///（java/lang/Class 上的方法，接收者是 jclass 本身）。
+  /// 函数表索引：GetObjectClass=31、GetMethodID=33、CallObjectMethodA=36。
+  static String? _mcMainName(Pointer<Void> env) {
+    final findClass = env
+        .cast<
+          Pointer<
+            NativeFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>
+          >
+        >()[6]
+        .asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf8>)>();
+    final getObjectClass = env
+        .cast<
+          Pointer<
+            NativeFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Void>)>
+          >
+        >()[31]
+        .asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Void>)>();
+    final getMethodId = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Void> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Utf8>,
+                Pointer<Utf8>,
+              )
+            >
+          >
+        >()[33]
+        .asFunction<
+          Pointer<Void> Function(
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+          )
+        >();
+    final callObjectMethodA = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Void> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+              )
+            >
+          >
+        >()[36]
+        .asFunction<
+          Pointer<Void> Function(
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Void>,
+            Pointer<Void>,
+          )
+        >();
+    final getStringUtfChars = env
+        .cast<
+          Pointer<
+            NativeFunction<
+              Pointer<Utf8> Function(
+                Pointer<Void>,
+                Pointer<Void>,
+                Pointer<Void>,
+              )
+            >
+          >
+        >()[169]
+        .asFunction<
+          Pointer<Utf8> Function(Pointer<Void>, Pointer<Void>, Pointer<Void>)
+        >();
+    final exceptionOccurred = env
+        .cast<
+          Pointer<NativeFunction<Pointer<Void> Function(Pointer<Void>)>>
+        >()[15]
+        .asFunction<Pointer<Void> Function(Pointer<Void>)>();
+    final exceptionClear = env
+        .cast<Pointer<NativeFunction<Void Function(Pointer<Void>)>>>()[17]
+        .asFunction<void Function(Pointer<Void>)>();
+
+    final mainName = 'net/minecraft/client/main/Main'.toNativeUtf8();
+    final getName = 'getName'.toNativeUtf8();
+    final sig = '()Ljava/lang/String;'.toNativeUtf8();
+    Pointer<Void> mainClass = nullptr;
+    try {
+      mainClass = findClass(env, mainName);
+      final exc = exceptionOccurred(env);
+      if (exc != nullptr) {
+        exceptionClear(env);
+        return null;
+      }
+      if (mainClass == nullptr) return null;
+      final clsClass = getObjectClass(env, mainClass);
+      final methodId = getMethodId(env, clsClass, getName, sig);
+      // 无参调用：jvalue* 传 NULL 合法。
+      final value = callObjectMethodA(env, mainClass, methodId, nullptr);
+      if (value == nullptr) return null;
+      final chars = getStringUtfChars(env, value, nullptr);
+      return chars.toDartString();
+    } finally {
+      calloc.free(mainName);
+      calloc.free(getName);
+      calloc.free(sig);
+    }
   }
 
   /// 走 JNI 调 `System.getProperty(key)`，返回 Java 字符串。
