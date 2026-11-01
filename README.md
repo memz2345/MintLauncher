@@ -768,9 +768,10 @@ Mint 对齐这一行为并保留旧版 CurseForge 格式作为兼容选项：
   沙盒文件 `Documents/mint_test_config.json`（`services/test_hooks.dart`
   在 `main.dart` 启动时读取，正常构建没有这个文件就全不生效）。CI 现在
   截 **5 个常规场景**：首页浅色、设置页、Flutter 降级返回菜单、下载管理、
-  深色；另外用 **AXe** 在模拟器上真实长按原生返回键，截
-  `ios-backmenu-native.png`（UIContextMenuInteraction 没有程序化弹出 API，
-  只能真长按；best-effort）。截图与 `jvm_probe_result.txt` 同时传 artifact，
+  深色。原生 `UIContextMenuInteraction` 没有公开的程序化弹出 API，
+  simctl 也不能合成「按住」手势，所以**原生菜单不在 CI 截图里** ——
+  它在真机 / 模拟器里长按返回键即可看到；`ios-backmenu-fallback.png`
+  是 iOS 14/15 的降级面板。截图与 `jvm_probe_result.txt` 同时传 artifact，
   并同步发到公开 Release
   [`ci-ios-shots`](https://github.com/memz2345/MintLauncher/releases/tag/ci-ios-shots)
   （artifact 下载要登录，Release 资产不用）。
