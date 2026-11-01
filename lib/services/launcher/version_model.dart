@@ -37,7 +37,15 @@ class LibraryRule {
     return true;
   }
 
+  /// 库规则求值的 os 覆盖（探针专用）：iOS 应用内给 **macOS 子进程** 构建
+  /// class path 时，进程是 iOS（currentOsName 会落到 'ios'），osx 专属库
+  /// （java-objc 等）会被整个踢出去，子进程反而缺库 —— 探针把它设成
+  /// 'osx'，求值环境与真正的运行平台一致。置回 null 恢复默认。
+  static String? osNameOverride;
+
   static String get currentOsName {
+    final override = osNameOverride;
+    if (override != null && override.isNotEmpty) return override;
     if (Platform.isWindows) return 'windows';
     if (Platform.isMacOS) return 'osx';
     if (Platform.isLinux) return 'linux';
@@ -47,7 +55,14 @@ class LibraryRule {
   /// Mojang 清单里的 arch 写法。注意规则里 "x86" 特指 **32 位**（
   /// 各库用它 `disallow` 掉 32 位环境），64 位机器绝不能返回 "x86"，
   /// 否则 LWJGL 主 jar 会被整个踢出 classpath（实测就是这么炸的）。
+  /// arch 覆盖（与 [osNameOverride] 配套）：iOS 上 Platform.version 不一定
+  /// 解析得出 arch，落到 'x86' 会把所有 disallow-x86 的主 jar 全踢出
+  /// classpath（探针给 mac arm64 子进程构建时必须是 'arm64'）。
+  static String? osArchOverride;
+
   static String get currentOsArch {
+    final override = osArchOverride;
+    if (override != null && override.isNotEmpty) return override;
     final v = Platform.version;
     if (v.contains('arm64') || v.contains('aarch64')) return 'arm64';
     if (v.contains('x64') || v.contains('x86_64') || v.contains('amd64')) {

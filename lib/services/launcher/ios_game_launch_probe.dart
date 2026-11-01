@@ -117,6 +117,11 @@ class IosGameLaunchProbe {
       buf.writeln('[2] 素材齐 java.mode=${mode.toRadixString(8)}');
 
       // ── 3. 解析版本 + 构建启动命令（osx 规则：-XstartOnFirstThread 等）──
+      // 库规则同样按 osx + arm64 求值：不然 osx 专属库（java-objc 等）会被
+      // iOS 进程视角踢出 class path；arch 解析不出来落到 'x86' 更是把主
+      // jar 全踢空（见 LibraryRule 注释）。
+      LibraryRule.osNameOverride = 'osx';
+      LibraryRule.osArchOverride = 'arm64';
       final version = await GameVersion.resolve(versionId,
           jsonDecode(File(versionJsonPath).readAsStringSync())
               as Map<String, dynamic>, (id) async {
