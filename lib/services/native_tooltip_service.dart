@@ -14,8 +14,11 @@ class NativeTooltipService {
   @visibleForTesting
   static bool debugForceNative = false;
 
+  /// Linux 走 GTK 弹出层（`linux/runner/native_tooltip.cc`），和 Android
+  /// 的 PopupWindow 同思路：tooltip 画在 Flutter 之外的原生窗口里。
   static bool get useNative =>
-      enabled && (debugForceNative || Platform.isAndroid);
+      enabled &&
+      (debugForceNative || Platform.isAndroid || Platform.isLinux);
 
   static int _seq = 0;
 

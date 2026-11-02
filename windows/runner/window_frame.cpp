@@ -62,6 +62,26 @@ void TrackMaximizeLeave(HWND window) {
   ::TrackMouseEvent(&track);
 }
 
+bool IsMaximizeButton(HWND window, POINT client_point);
+
+// 窗口几何变化后（最大化 / 还原）按当前光标重算 hover。
+//
+// 最大化后按钮挪到了新窗口的右上角，光标可能已经落在客户区里；此时系统
+// 不会再发 WM_NCHITTEST / WM_NCMOUSELEAVE，FlutterView 接管客户区后
+// Flutter 也收不到那块原生热区的 enter/exit —— 最大化按钮就会一直停在
+// 悬停激活态。这里用光标实测位置兜底，指针还在按钮上就保持 hover，
+// 离开就清掉。
+void RefreshMaximizeHoverFromCursor(HWND window) {
+  POINT point = {};
+  if (!::GetCursorPos(&point)) {
+    UpdateMaximizeHover(window, false);
+    return;
+  }
+  HWND root = RootWindow(window);
+  ::ScreenToClient(root, &point);
+  UpdateMaximizeHover(window, IsMaximizeButton(root, point));
+}
+
 void SetMaximizePressed(HWND window, bool pressed) {
   HWND root = RootWindow(window);
   if (pressed) {
@@ -237,9 +257,12 @@ LRESULT CALLBACK ViewSubclassProc(HWND window,
                                   UINT_PTR id,
                                   DWORD_PTR ref) {
   if (id == kViewSubclassId) {
-    if (message == WM_MOUSEMOVE && IsMaximizePressed(window)) {
-      // 光标进入 Flutter 客户区说明已离开最大化按钮热区（拖出再松手
-      // 不应触发），这里也补一条清理路径。
+    if (message == WM_MOUSEMOVE) {
+      // FlutterView 的 WM_NCHITTEST 已经把最大化热区让给了顶层，所以能
+      // 收到 WM_MOUSEMOVE 就说明光标在客户区里、不在 HTMAXBUTTON 上。
+      // 这里同时清掉 hover（否则最大化后 hover 会一直卡在激活态）和
+      // 按下态（拖出按钮再松手不应触发）。
+      UpdateMaximizeHover(RootWindow(window), false);
       ReleaseMaximizePress(window, false);
     }
     if (message == WM_NCHITTEST) {
@@ -338,6 +361,8 @@ bool HandleFrameMessage(HWND window,
       // 一起）。这里立刻补一次，再借 caption 定时器补几次 —— DWM 通常要等
       // 缩放动画播完才落最终状态，单次补设会被它盖回去。
       if (wparam == SIZE_MAXIMIZED || wparam == SIZE_RESTORED) {
+        // 几何变了：重算最大化按钮 hover，免得样式卡在激活态。
+        RefreshMaximizeHoverFromCursor(window);
         g_caption_retries[RootWindow(window)] = 0;
         ReapplyWindowChrome(window);
         ::SetTimer(window, kBackdropCaptionTimer, 90, nullptr);
@@ -358,6 +383,8 @@ bool HandleFrameMessage(HWND window,
     case WM_ACTIVATE:
       if (LOWORD(wparam) == WA_INACTIVE) {
         ReleaseMaximizePress(window, false);
+        // 失焦后不会再有 NCHITTEST / NCMOUSELEAVE，hover 直接收掉。
+        UpdateMaximizeHover(window, false);
       }
       ReapplyWindowChrome(window);
       break;

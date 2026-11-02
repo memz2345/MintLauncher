@@ -29,6 +29,20 @@ class WindowCaptionSignals {
   /// 最近一次最大化释放是否应该触发点击（false = 拖出 / 失焦取消）。
   bool maximizeReleaseActivated = false;
 
+  /// 窗口几何变化（最大化 / 还原 / 失焦）后清掉最大化按钮的悬浮 / 按压
+  /// 视觉态。
+  ///
+  /// 最大化后按钮已经挪到新窗口的右上角，指针可能落在客户区里：Windows
+  /// 不会补发 NCHITTEST / NCMOUSELEAVE，Flutter 也收不到那块热区的
+  /// enter/exit，hover 会一直停在「激活」态。原生在 WM_SIZE 里按光标位置
+  /// 重算一次，这条信号给 Dart 侧兜底（Linux 的 GTK 最大化同样适用）。
+  final ValueNotifier<int> captionInteractionReset = ValueNotifier<int>(0);
+
+  void resetCaptionInteraction() {
+    captionInteractionReset.value++;
+    maximizeHover.value = false;
+  }
+
   bool _bound = false;
 
   void bind() {
@@ -65,5 +79,6 @@ class WindowCaptionSignals {
     maximizeClick.value = 0;
     maximizeRelease.value = 0;
     maximizeReleaseActivated = false;
+    captionInteractionReset.value = 0;
   }
 }

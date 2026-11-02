@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:mint/services/download_center.dart';
 import 'package:mint/services/linux_window_chrome.dart';
+import 'package:mint/services/native_tooltip_service.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/src/enums.dart';
 import 'package:mint/services/window_backdrop.dart';
@@ -291,6 +292,7 @@ class _MintCaptionBarState extends State<MintCaptionBar> with WindowListener {
       final fullscreen = await windowManager.isFullScreen();
       if (!mounted) return;
       if (_maximized != maximized || _fullscreen != fullscreen) {
+        WindowCaptionSignals.instance.resetCaptionInteraction();
         setState(() {
           _maximized = maximized;
           _fullscreen = fullscreen;
@@ -304,17 +306,26 @@ class _MintCaptionBarState extends State<MintCaptionBar> with WindowListener {
   @override
   void onWindowMaximize() {
     WindowBackdrop.instance.reapplyCaption();
+    // 窗口几何变了：最大化按钮的 hover/按压视觉态必须重来一次，否则会
+    // 卡在激活态（Windows 的原生热区 / Linux 的 GTK 布局变化都不会补发
+    // 指针离开事件）。
+    WindowCaptionSignals.instance.resetCaptionInteraction();
     setState(() => _maximized = true);
   }
 
   @override
   void onWindowUnmaximize() {
     WindowBackdrop.instance.reapplyCaption();
+    WindowCaptionSignals.instance.resetCaptionInteraction();
     setState(() => _maximized = false);
   }
 
   @override
   void onWindowFocus() => WindowBackdrop.instance.reapplyCaption();
+
+  @override
+  void onWindowBlur() =>
+      WindowCaptionSignals.instance.resetCaptionInteraction();
 
   @override
   void onWindowEnterFullScreen() => setState(() => _fullscreen = true);
@@ -688,11 +699,18 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
   Offset? _syntheticPosition;
   int _syntheticViewId = 0;
 
+  /// 原生 tooltip（Linux GTK 弹出层）。悬停 550ms 后才弹，离开 / 按下 /
+  /// 窗口状态变化立即收。
+  static const Duration _tooltipDelay = Duration(milliseconds: 550);
+  Timer? _tooltipTimer;
+  int? _tooltipToken;
+
   @override
   void initState() {
     super.initState();
+    final signals = WindowCaptionSignals.instance;
+    signals.captionInteractionReset.addListener(_onInteractionReset);
     if (widget.maximize) {
-      final signals = WindowCaptionSignals.instance;
       signals.maximizeHover.addListener(_onNativeHover);
       signals.maximizeClick.addListener(_onNativeClick);
       signals.maximizeRelease.addListener(_onNativeRelease);
@@ -701,9 +719,22 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
   }
 
   @override
+  void didUpdateWidget(covariant _CaptionChromeButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 「最大化」→「还原」这类文案变化：旧 tooltip 已经过期，重新排队。
+    if (oldWidget.tooltip != widget.tooltip) {
+      _hideTooltip();
+      if (_hover) _scheduleTooltip();
+    }
+  }
+
+  @override
   void dispose() {
+    _tooltipTimer?.cancel();
+    NativeTooltipService.hide(_tooltipToken);
+    final signals = WindowCaptionSignals.instance;
+    signals.captionInteractionReset.removeListener(_onInteractionReset);
     if (widget.maximize) {
-      final signals = WindowCaptionSignals.instance;
       signals.maximizeHover.removeListener(_onNativeHover);
       signals.maximizeClick.removeListener(_onNativeClick);
       signals.maximizeRelease.removeListener(_onNativeRelease);
@@ -711,11 +742,53 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
     super.dispose();
   }
 
+  /// 窗口最大化 / 还原 / 失焦：按钮几何或层级变了，指针离开事件可能
+  /// 永远收不到，这里直接把悬浮 / 按压态和 tooltip 收掉。
+  void _onInteractionReset() {
+    if (!mounted) return;
+    _hideTooltip();
+    if (!_hover && !_pressed) return;
+    setState(() {
+      _hover = false;
+      _pressed = false;
+    });
+  }
+
+  void _scheduleTooltip() {
+    if (!NativeTooltipService.useNative) return;
+    _tooltipTimer?.cancel();
+    _tooltipTimer = Timer(_tooltipDelay, _showTooltip);
+  }
+
+  void _showTooltip() {
+    if (!mounted || !_hover || _pressed) return;
+    final box = _buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final anchor = box.localToGlobal(Offset.zero) & box.size;
+    _tooltipToken = NativeTooltipService.show(
+      text: widget.tooltip,
+      anchor: anchor,
+      dark: Theme.of(context).brightness == Brightness.dark,
+    );
+  }
+
+  void _hideTooltip() {
+    _tooltipTimer?.cancel();
+    _tooltipTimer = null;
+    NativeTooltipService.hide(_tooltipToken);
+    _tooltipToken = null;
+  }
+
   void _onNativeHover() {
     if (!mounted) return;
     final value = WindowCaptionSignals.instance.maximizeHover.value;
     if (value == _hover) return;
     setState(() => _hover = value);
+    if (value) {
+      _scheduleTooltip();
+    } else {
+      _hideTooltip();
+    }
   }
 
   void _onNativeClick() {
@@ -730,6 +803,7 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
     _syntheticViewId = View.of(context).viewId;
     _activeSyntheticPointer = _syntheticPointer;
     _syntheticPosition = position;
+    _hideTooltip();
     setState(() => _pressed = true);
     GestureBinding.instance.handlePointerEvent(
       PointerDownEvent(
@@ -790,6 +864,11 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
     }
     if (_hover == value) return;
     setState(() => _hover = value);
+    if (value) {
+      _scheduleTooltip();
+    } else {
+      _hideTooltip();
+    }
   }
 
   @override
@@ -812,7 +891,10 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
       onEnter: (_) => _setHover(true),
       onExit: (_) => _setHover(false),
       child: Listener(
-        onPointerDown: (_) => setState(() => _pressed = true),
+        onPointerDown: (_) {
+          _hideTooltip();
+          setState(() => _pressed = true);
+        },
         onPointerUp: (_) => setState(() => _pressed = false),
         onPointerCancel: (_) => setState(() => _pressed = false),
         child: SizedBox(

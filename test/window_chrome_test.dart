@@ -192,6 +192,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('窗口最大化事件清掉最大化按钮残留的悬浮态', (tester) async {
+    await tester.pumpWidget(
+      MiuixThemeController(
+        isDark: true,
+        child: MaterialApp(
+          home: Scaffold(
+            body: MintCaptionBar(title: '测试'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    const codec = StandardMethodCodec();
+
+    Future<void> platformCall(String channel, MethodCall call) async {
+      await messenger.handlePlatformMessage(
+        channel,
+        codec.encodeMethodCall(call),
+        (_) {},
+      );
+    }
+
+    Color? bgOf(String tooltip) {
+      final container = tester.widget<AnimatedContainer>(
+        find.byKey(ValueKey('caption-bg-$tooltip')),
+      );
+      final decoration = container.decoration;
+      return decoration is BoxDecoration ? decoration.color : null;
+    }
+
+    // 原生热区报告 hover：按钮进入激活态。
+    await platformCall(
+      'mint/window_chrome',
+      const MethodCall('maximizeHover', true),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(bgOf('最大化'), isNot(Colors.transparent));
+
+    // 窗口最大化：按钮挪位后指针可能落在客户区，系统不会再补
+    // NCMOUSELEAVE。窗口事件必须把视觉态收掉（文案同时换成「还原」）。
+    await platformCall(
+      'window_manager',
+      const MethodCall('onEvent', {'eventName': 'maximize'}),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('caption-bg-还原')), findsOneWidget);
+    expect(bgOf('还原'), Colors.transparent);
+  });
+
   testWidgets('Material 二级页托管标题栏后正文不再垫页面顶栏', (tester) async {
     // 托管后窗口标题栏在 Navigator 之上，页面内没有顶栏；正文再垫 56px
     // 就是标题栏下面那块莫名的空白。

@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "native_tooltip.h"
 #include "window_chrome.h"
 #include "window_effects.h"
 
@@ -85,6 +86,8 @@ static void my_application_activate(GApplication* application) {
   mint_backdrop_register(view);
   // mint/window_chrome 方法通道（自绘标题栏：无边框 + 系统三大金刚图标）。
   mint_window_chrome_register(view);
+  // dev.mint.mint/tooltip 方法通道（自绘标题栏的原生悬浮提示）。
+  mint_native_tooltip_register(view);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

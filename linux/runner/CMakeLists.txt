@@ -9,6 +9,7 @@ project(runner LANGUAGES C CXX)
 add_executable(${BINARY_NAME}
   "main.cc"
   "my_application.cc"
+  "native_tooltip.cc"
   "window_effects.cc"
   "window_chrome.cc"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
