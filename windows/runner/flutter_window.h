@@ -38,6 +38,10 @@ class FlutterWindow : public Win32Window {
   // Windows system backdrop channel (`mint/backdrop`).
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       backdrop_channel_;
+
+  // GPU adapters + per-application render-GPU preference (`mint/gpu`).
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      gpu_channel_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

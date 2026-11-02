@@ -943,6 +943,7 @@ HMCL 的图形后端 / 运行时思路补充（`lib/src/enums.dart` + 设置页�
 | 启动前命令 | PCL2 `LaunchAdvanceRun` | `cmd /c` 在游戏主目录执行，支持 `{verpath}/{verindie}/{java}/{version}` 占位符，可选等待结束 |
 | GC 预设 | PCL2 `LaunchAdvanceGC` | 自动 / 调优 G1 / 标准 G1 / ZGC / 分代 ZGC |
 | 强制图形后端 | HMCL | 自动 / OpenGL / Vulkan / **CPU 软件渲染**（Windows 下载 mesa-loader-windows 26.0.4，约 48MB，`-javaagent:...=llvmpipe`） |
+| 渲染显卡 | HMCL `highPerformance` / PCL2 `SetGpuPreference` | 双显卡机器选卡。Windows：启动前写 `HKCUSoftwareMicrosoftDirectXUserGpuPreferences`（值名 = 本次启动的 Java exe 绝对路径），档位「自动 / 节能 / 高性能」= `GpuPreference=0/1/2`，「指定某块卡」= `SpecificAdapter=VEN&DEV&SUBSYS;GpuPreference=1073741824`，卡名与 VEN&DEV&SUBSYS 由原生 DXGI `EnumAdapters1` 枚举（通道 `mint/gpu`，`windows/runner/gpu_host.cpp`）；选「自动」只删 Mint 写过的条目，不碰用户在「设置 → 显示 → 图形」里配的那份。Linux：`DRI_PRIME=1/0`（CI 用 `tool/ci/linux_gpu_probe.sh` 验变量确实传到子进程）。启动日志打一行实际写入的值；本机探针 `MINT_GPU_PROBE_OUT=<文件>` |
 | 文件校验 | PCL2 `VersionAdvanceAssetsV2` | 全局开关 + **每版本「不校验」**：已有文件直接信任只补缺失 |
 | 自动装 Java | HMCL | 启动时按 `javaVersion.majorVersion` 挑 / 下载（见 java_runtime） |
 | 环境变量 / 自动连服 | PCL2 / HMCL | `KEY=VALUE` 一行一个；`--server host:port` 启动直连 |

@@ -13,6 +13,7 @@ import 'package:mint/services/settings_service.dart';
 import 'common.dart';
 import '../widgets/mint_page.dart';
 import '../widgets/mint_refresh.dart';
+import '../widgets/pcl_hover.dart';
 import 'package:mint/ui/mint_icons.dart' show mintMiuixOf;
 
 // ───────────────────────── 加载器目录（安装页 / 补装页共用）─────────────────────────
@@ -882,29 +883,31 @@ class _LoaderOptionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final row = Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Row(
-            children: [
-              icon,
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? cs.primary : cs.onSurface,
-                  ),
+    // 行动画与版本管理列表一致（悬浮底板缩放 + Material 风格下的水波）；
+    // 选中态用常驻底色 baseColor，不参与缩放。
+    final row = PclHoverSurface(
+      onTap: onTap,
+      borderRadius: 14,
+      ripple: !miuix,
+      baseColor: selected ? cs.primary.withValues(alpha: 0.07) : null,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? cs.primary : cs.onSurface,
                 ),
               ),
-              _RadioMark(selected: selected),
-            ],
-          ),
+            ),
+            _RadioMark(selected: selected),
+          ],
         ),
       ),
     );
@@ -1057,34 +1060,36 @@ class _BuildListCard extends StatelessWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
-                      onTap: () => onPick(e.value),
-                      child: SizedBox(
-                        height: 56,
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                e.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  color: selected ? cs.primary : cs.onSurface,
-                                ),
+                  PclHoverSurface(
+                    onTap: () => onPick(e.value),
+                    borderRadius: 14,
+                    ripple: !miuix,
+                    baseColor: selected
+                        ? cs.primary.withValues(alpha: 0.07)
+                        : null,
+                    child: SizedBox(
+                      height: 56,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              e.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: selected ? cs.primary : cs.onSurface,
                               ),
                             ),
-                            if (selected)
-                              Icon(Icons.check, size: 20, color: cs.primary),
-                            const SizedBox(width: 16),
-                          ],
-                        ),
+                          ),
+                          if (selected)
+                            Icon(Icons.check, size: 20, color: cs.primary),
+                          const SizedBox(width: 16),
+                        ],
                       ),
                     ),
                   ),

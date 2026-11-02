@@ -192,6 +192,78 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('原生最大化热区的 ripple 锚在真实按点，不是按钮中心', (tester) async {
+    // 原生非客户区吞掉了这块的指针事件，Dart 合成 pointer down 喂给 InkWell。
+    // 合成点必须用原生回传的按点，否则水波永远从按钮正中长出来，和其余
+    // 三个金刚（跟着鼠标走）观感不一致。
+    final downs = <Offset>[];
+    await tester.pumpWidget(
+      MiuixThemeController(
+        isDark: true,
+        child: MaterialApp(
+          builder: (context, child) => Listener(
+            onPointerDown: (event) => downs.add(event.position),
+            child: Column(
+              children: [
+                const MintCaptionBar(title: 'Mint Launcher'),
+                Expanded(child: child ?? const SizedBox.shrink()),
+              ],
+            ),
+          ),
+          home: const Scaffold(body: SizedBox.expand()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    const channel = MethodChannel('mint/window_chrome');
+    messenger.setMockMethodCallHandler(channel, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    Future<void> nativeMessage(String method, [Object? args]) =>
+        messenger.handlePlatformMessage(
+          'mint/window_chrome',
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall(method, args),
+          ),
+          (_) {},
+        );
+
+    final maxRect = tester.getRect(find.byKey(const ValueKey('caption-max')));
+    final press = maxRect.topLeft + const Offset(9, 31);
+
+    await nativeMessage('maximizeClick', <String, double>{
+      'x': press.dx,
+      'y': press.dy,
+    });
+    await tester.pump();
+    expect(downs, hasLength(1));
+    expect(downs.single, press);
+
+    // 按点跑到按钮外面（DPI 取整 / 老数据）：夹进按钮矩形，不放水波出热区。
+    await nativeMessage('maximizeClick', <String, double>{
+      'x': maxRect.right + 40,
+      'y': maxRect.bottom + 40,
+    });
+    await tester.pump();
+    expect(downs, hasLength(2));
+    expect(downs[1].dx, lessThanOrEqualTo(maxRect.right));
+    expect(downs[1].dy, lessThanOrEqualTo(maxRect.bottom));
+
+    // 老原生只回传 bool：退回按钮中心。
+    await nativeMessage('maximizeClick', true);
+    await tester.pump();
+    expect(downs, hasLength(3));
+    expect(downs[2], maxRect.center);
+
+    await nativeMessage('maximizeRelease', true);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Material 二级页托管标题栏后正文不再垫页面顶栏', (tester) async {
     // 托管后窗口标题栏在 Navigator 之上，页面内没有顶栏；正文再垫 56px
     // 就是标题栏下面那块莫名的空白。

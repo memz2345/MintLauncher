@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mint/services/launcher/launcher_controller.dart';
+import 'package:mint/services/gpu_preference.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/src/enums.dart';
 
@@ -59,6 +62,7 @@ class _VersionSettingsPageState extends State<VersionSettingsPage> {
   bool? _verifyFilesOverride;
   bool? _preLaunchWaitOverride;
   String? _graphicsOverride;
+  String? _gpuOverride;
   String? _gcOverride;
   _SettingsSection _section = _SettingsSection.overview;
 
@@ -80,6 +84,7 @@ class _VersionSettingsPageState extends State<VersionSettingsPage> {
     _verifyFilesOverride = _initial.verifyFiles;
     _preLaunchWaitOverride = _initial.preLaunchWait;
     _graphicsOverride = _initial.graphicsBackend;
+    _gpuOverride = _initial.gpuPreference;
     _gcOverride = _initial.gcPreset;
   }
 
@@ -689,6 +694,18 @@ class _VersionSettingsPageState extends State<VersionSettingsPage> {
                 : '本版本：${graphics.label}',
             onTap: () => _pickGraphics(context, settings),
           ),
+          if (Platform.isWindows || Platform.isLinux)
+            _ChoiceRow(
+              miuix: mintMiuixOf(context),
+              icon: Icons.developer_board_outlined,
+              title: '渲染显卡',
+              subtitle: _gpuOverride == null
+                  ? '跟随全局：'
+                        '${GpuService.instance.labelFor(settings.gpuPreference)}'
+                  : '本版本：'
+                        '${GpuService.instance.labelFor(_gpuOverride!)}',
+              onTap: () => _pickGpu(context, settings),
+            ),
           _VerifyRow(
             miuix: mintMiuixOf(context),
             value: verify,
@@ -766,6 +783,47 @@ class _VersionSettingsPageState extends State<VersionSettingsPage> {
     setState(() => _graphicsOverride = result.isEmpty ? null : result);
   }
 
+  /// 渲染显卡（本版本覆盖）。`''` 是用户显式选的「自动」，所以「跟随全局」
+  /// 另用一个哨兵值，不能像图形后端那样拿空串当跟随。
+  Future<void> _pickGpu(BuildContext context, SettingsService settings) async {
+    const follow = '__follow__';
+    final adapters = await GpuService.instance.loadAdapters();
+    if (!context.mounted) return;
+    final windows = Platform.isWindows;
+    final result = await showMintChoiceDialog<String>(
+      context,
+      miuix: mintMiuixOf(context),
+      title: '渲染显卡',
+      selected: _gpuOverride ?? follow,
+      options: [
+        const MintChoice(value: follow, label: '跟随全局', subtitle: '使用启动器设置里的显卡'),
+        const MintChoice(
+          value: kGpuAuto,
+          label: '自动',
+          subtitle: '不写每应用图形偏好，交给系统 / 驱动',
+        ),
+        MintChoice(
+          value: kGpuPowerSaving,
+          label: windows ? '节能显卡' : '集成显卡',
+          subtitle: windows ? 'GpuPreference=1' : 'DRI_PRIME=0',
+        ),
+        MintChoice(
+          value: kGpuHighPerformance,
+          label: windows ? '高性能显卡' : '独立显卡',
+          subtitle: windows ? 'GpuPreference=2' : 'DRI_PRIME=1',
+        ),
+        for (final adapter in adapters)
+          MintChoice(
+            value: adapter.id,
+            label: adapter.name,
+            subtitle: '${adapter.memoryLabel} · ${adapter.specific}',
+          ),
+      ],
+    );
+    if (result == null) return;
+    setState(() => _gpuOverride = result == follow ? null : result);
+  }
+
   Widget _buildSaveRow(BuildContext context, SettingsService settings) {
     final cs = Theme.of(context).colorScheme;
     final saved = settings.settingsFor(widget.versionId);
@@ -813,6 +871,7 @@ class _VersionSettingsPageState extends State<VersionSettingsPage> {
         height: height != null && height > 0 ? height : null,
         verifyFiles: _verifyFilesOverride,
         graphicsBackend: _graphicsOverride,
+        gpuPreference: _gpuOverride,
         extraGameArgs: _gameArgs.text.trim(),
         preLaunchCommand: _preLaunch.text.trim(),
         preLaunchWait: hasCommand ? _preLaunchWaitOverride : null,

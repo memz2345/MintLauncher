@@ -645,12 +645,13 @@ class _CaptionDownloadButton extends StatelessWidget {
 }
 
 /// 单个标题栏按钮：46×44 热区 + M3 风格 state layer + **Flutter 原生
-/// InkRipple**（Material/InkWell 提供，非自绘）。
+/// InkRipple**（[mintSplashFactory]，桌面是 mdui 长尾涟漪），水波一律从
+/// 鼠标按点长出来。
 ///
 /// 最大化按钮位于原生 Snap Layouts 热区里，Flutter 收不到鼠标事件，
-/// 所以它的 hover / 点击由原生 `mint/window_chrome` 通道回传（见
-/// [WindowCaptionSignals]）；原生点击没有指针事件可喂给 InkWell，
-/// 这里通过 [MaterialInkController] 手动种一个真·InkRipple。
+/// 所以它的 hover / 按下坐标由原生 `mint/window_chrome` 通道回传（见
+/// [WindowCaptionSignals]）；这里按回传的按点合成一对 pointer down / up 喂给
+/// InkWell， ripple 与点击时序和其余金刚完全同源。
 /// 返回键和另外两个金刚走普通指针事件，InkWell 自己出 ripple。
 class _CaptionChromeButton extends StatefulWidget {
   const _CaptionChromeButton({
@@ -726,7 +727,7 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
     }
     final box = _buttonKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final position = box.localToGlobal(box.size.center(Offset.zero));
+    final position = _nativePressGlobal(box);
     _syntheticViewId = View.of(context).viewId;
     _activeSyntheticPointer = _syntheticPointer;
     _syntheticPosition = position;
@@ -742,6 +743,23 @@ class _CaptionChromeButtonState extends State<_CaptionChromeButton> {
       ),
     );
   }
+
+  /// 原生回传的真实按点（客户区逻辑像素 = Flutter 全局坐标，Flutter 视图铺满
+  /// 客户区）。没有坐标（老原生只回传 bool）时退回按钮中心；DPI 取整让指针
+  /// 贴着热区边界时夹进按钮矩形，别让水波长到热区外面。
+  Offset _nativePressGlobal(RenderBox box) {
+    final topLeft = box.localToGlobal(Offset.zero);
+    final rect = topLeft & box.size;
+    final raw = WindowCaptionSignals.instance.maximizePressPosition;
+    if (raw == null) return rect.center;
+    return Offset(
+      _clamp(raw.dx, rect.left, rect.right),
+      _clamp(raw.dy, rect.top, rect.bottom),
+    );
+  }
+
+  static double _clamp(double value, double min, double max) =>
+      value < min ? min : (value > max ? max : value);
 
   void _onNativeRelease() {
     if (!mounted) return;
@@ -1408,8 +1426,9 @@ class MintCaptionActionScope extends InheritedWidget {
 }
 
 /// 标题栏里的方形动作按钮：与 [_CaptionChromeButton] 同一观感 ——
-/// 46×44 热区、90ms hover state layer、**方形 InkRipple**（rectCallback
-/// 铺满整个按钮，不是 IconButton 默认的圆形）。
+/// 46×44 热区、90ms hover state layer、方形 mdui 涟漪（铺满整个按钮，不是
+/// IconButton 默认的圆形）。桌面三平台与三大金刚共用 [mintSplashFactory]，
+/// 移动端保持原生 InkRipple。
 class MintSquareCaptionAction extends StatefulWidget {
   const MintSquareCaptionAction({
     super.key,
@@ -1475,7 +1494,7 @@ class _MintSquareCaptionActionState extends State<MintSquareCaptionAction> {
                       focusColor: Colors.transparent,
                       highlightColor: Colors.transparent,
                       splashColor: _splashColor(cs),
-                      splashFactory: InkRipple.splashFactory,
+                      splashFactory: mintSplashFactory,
                       child: Center(
                         child: IconTheme(
                           data: IconThemeData(

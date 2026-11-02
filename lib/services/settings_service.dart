@@ -35,6 +35,7 @@ class VersionSettings {
     this.height,
     this.verifyFiles,
     this.graphicsBackend,
+    this.gpuPreference,
     this.extraGameArgs,
     this.preLaunchCommand,
     this.preLaunchWait,
@@ -70,6 +71,10 @@ class VersionSettings {
   /// 强制图形后端 id（auto / opengl / vulkan / cpu，null = 跟随全局）。
   String? graphicsBackend;
 
+  /// 渲染显卡偏好 id（'' = 自动 / power / high / adapter:VEN&DEV&SUBSYS）。
+  /// null = 跟随全局；空串 = 显式选「自动」，和「跟随」不是一回事。
+  String? gpuPreference;
+
   /// 追加到版本 JSON 游戏参数之后（一行一个，支持空格切分）。
   String? extraGameArgs;
 
@@ -93,6 +98,7 @@ class VersionSettings {
       height == null &&
       verifyFiles == null &&
       (graphicsBackend == null || graphicsBackend!.isEmpty) &&
+      gpuPreference == null &&
       (extraGameArgs == null || extraGameArgs!.isEmpty) &&
       (preLaunchCommand == null || preLaunchCommand!.isEmpty) &&
       preLaunchWait == null &&
@@ -110,6 +116,7 @@ class VersionSettings {
     if (height != null) 'height': height,
     if (verifyFiles != null) 'verifyFiles': verifyFiles,
     if (graphicsBackend != null) 'graphicsBackend': graphicsBackend,
+    if (gpuPreference != null) 'gpuPreference': gpuPreference,
     if (extraGameArgs != null) 'extraGameArgs': extraGameArgs,
     if (preLaunchCommand != null) 'preLaunchCommand': preLaunchCommand,
     if (preLaunchWait != null) 'preLaunchWait': preLaunchWait,
@@ -129,6 +136,7 @@ class VersionSettings {
         height: (json['height'] as num?)?.toInt(),
         verifyFiles: json['verifyFiles'] as bool?,
         graphicsBackend: json['graphicsBackend'] as String?,
+        gpuPreference: json['gpuPreference'] as String?,
         extraGameArgs: json['extraGameArgs'] as String?,
         preLaunchCommand: json['preLaunchCommand'] as String?,
         preLaunchWait: json['preLaunchWait'] as bool?,
@@ -149,6 +157,7 @@ typedef EffectiveVersionSettings = ({
   String serverAddress,
   bool verifyFiles,
   GraphicsBackend graphicsBackend,
+  String gpuPreference,
   String extraGameArgs,
   String preLaunchCommand,
   bool preLaunchWait,
@@ -888,6 +897,15 @@ class SettingsService extends ChangeNotifier {
     _persistLauncherConfig();
   }
 
+  /// 渲染显卡偏好（Windows 的每应用图形设置；'' = 交给系统决定）。
+  String _gpuPreference = '';
+  String get gpuPreference => _gpuPreference;
+  set gpuPreference(String value) {
+    if (_gpuPreference == value) return;
+    _gpuPreference = value;
+    _persistLauncherConfig();
+  }
+
   /// Android 渲染器（FCL RendererManager 六档）。桌面端忽略。
   AndroidRenderer _androidRenderer = AndroidRenderer.gl4es;
   AndroidRenderer get androidRenderer => _androidRenderer;
@@ -1200,6 +1218,8 @@ class SettingsService extends ChangeNotifier {
           vs?.graphicsBackend != null && vs!.graphicsBackend!.isNotEmpty
           ? GraphicsBackend.fromId(vs.graphicsBackend)
           : _graphicsBackend,
+      // null = 跟随全局；'' 是用户显式选的「自动」，所以要按 ?? 而不是 isEmpty。
+      gpuPreference: vs?.gpuPreference ?? _gpuPreference,
       extraGameArgs:
           (vs?.extraGameArgs != null && vs!.extraGameArgs!.isNotEmpty)
           ? vs.extraGameArgs!
@@ -1242,6 +1262,7 @@ class SettingsService extends ChangeNotifier {
     'launcherVisibility': _launcherVisibility.id,
     'processPriority': _processPriority.id,
     'graphicsBackend': _graphicsBackend.id,
+    'gpuPreference': _gpuPreference,
     'androidRenderer': _androidRenderer.id,
     'androidShowFps': _androidShowFps,
     'gcPreset': _gcPreset.id,
@@ -1334,6 +1355,7 @@ class SettingsService extends ChangeNotifier {
     _graphicsBackend = GraphicsBackend.fromId(
       json['graphicsBackend'] as String?,
     );
+    _gpuPreference = (json['gpuPreference'] as String?) ?? _gpuPreference;
     _androidRenderer = AndroidRenderer.fromId(
       json['androidRenderer'] as String?,
     );
@@ -1365,8 +1387,7 @@ class SettingsService extends ChangeNotifier {
         (json['pageBackgroundBlur'] as num?)?.toDouble() ?? _pageBackgroundBlur;
     _pageBackgroundAssignments = {
       if (json['pageBackgroundAssignments'] is Map)
-        for (final e
-            in (json['pageBackgroundAssignments'] as Map).entries)
+        for (final e in (json['pageBackgroundAssignments'] as Map).entries)
           if (e.value is String && (e.value as String).isNotEmpty)
             '${e.key}': e.value as String,
     };

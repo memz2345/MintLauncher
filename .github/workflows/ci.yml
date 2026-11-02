@@ -57,6 +57,11 @@ jobs:
       - name: X11 冒烟（Xvfb）
         run: bash tool/ci/smoke_x11.sh build/linux/x64/release/bundle/mint build/smoke/x11
 
+      # runner 没有 GPU：这里只验「启动器把 DRI_PRIME 交到子进程手里」这一层，
+      # 真机落在哪块卡见 README「渲染显卡」一行。
+      - name: Linux 选卡探针（DRI_PRIME 传给子进程）
+        run: bash tool/ci/linux_gpu_probe.sh build/linux/x64/release/bundle/mint build/smoke/gpu
+
       - name: 多场景截图巡游（页面 / 风格 / 明暗）
         run: bash tool/ci/screenshot_tour.sh build/linux/x64/release/bundle/mint build/smoke/tour
 

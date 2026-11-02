@@ -11,7 +11,9 @@ import 'package:mint/services/theme_package.dart';
 import 'package:mint/ui/mint_icons.dart' show mintFluentOf, mintMiuixOf;
 import 'package:mint/ui/widgets/page_background.dart'
     show mintCardMaskColor, mintDialogMaskColor, mintSheetBackgroundPathOf;
+import 'package:mint/widgets/app_tooltip.dart';
 import 'package:mint/widgets/ios_push_transition.dart' show MiuixNavSettleCurve;
+import 'package:mint/widgets/mdui_ripple.dart' show mintSplashFactory;
 
 // ───────────────────────── 加载器图标 ─────────────────────────
 
@@ -869,6 +871,73 @@ class MintTextAction extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// 侧栏 / 卡片头部用的小 FAB（40dp 圆底 + 加号）。
+///
+/// 版本管理的「添加游戏目录」入口：宽栏放在侧栏最上面的标题行，收起来放
+/// 在图标栏顶部；右下角那颗大号 FAB 只在竖屏出现，两者同一个动作。
+/// 三套风格各自的 FAB 观感（miuix 按压遮罩 / M3 squircle / Fluent 圆角）。
+class MintMiniFab extends StatelessWidget {
+  const MintMiniFab({
+    super.key,
+    required this.miuix,
+    required this.tooltip,
+    required this.onPressed,
+    this.icon = Icons.add,
+    this.size = 40,
+  });
+
+  final bool miuix;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final enabled = onPressed != null;
+    final fab = miuix
+        ? MiuixFloatingActionButton(
+            onPressed: onPressed,
+            shape: const CircleBorder(),
+            minWidth: size,
+            minHeight: size,
+            shadowElevation: 2,
+            child: Icon(
+              icon,
+              size: size * 0.5,
+              color: enabled
+                  ? MiuixTheme.of(context).colors.onPrimary
+                  : MiuixTheme.of(context).colors.onSurfaceVariantSummary,
+            ),
+          )
+        : Material(
+            color: enabled ? cs.primary : cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(mintFluentOf(context) ? 8 : 18),
+            clipBehavior: Clip.antiAlias,
+            elevation: enabled ? 2 : 0,
+            child: InkWell(
+              onTap: onPressed,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: cs.onPrimary.withValues(alpha: 0.22),
+              splashFactory: mintSplashFactory,
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: Icon(
+                  icon,
+                  size: size * 0.5,
+                  color: enabled ? cs.onPrimary : cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+    return AppTooltip(message: tooltip, child: fab);
   }
 }
 

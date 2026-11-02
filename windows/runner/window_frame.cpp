@@ -92,6 +92,24 @@ void ReleaseMaximizePress(HWND window, bool activate) {
 constexpr int kCaptionHeightDip = 44;
 constexpr int kCaptionButtonWidthDip = 46;
 
+// 最大化热区的按下：把**真实按点**（客户区 + DIP，和 Flutter 逻辑坐标同
+// 尺度）一起回传。Dart 拿它在该按钮的 InkWell 上合成 pointer down，水波就
+// 从鼠标位置长出来；只回传一个 bool 的话 Dart 只能钉在按钮中心，观感和
+// 另外三个金刚不一致。
+void NotifyMaximizeClick(HWND window, LPARAM lparam) {
+  HWND root = RootWindow(window);
+  flutter::EncodableMap args;
+  POINT point = {GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+  const int dpi = static_cast<int>(::GetDpiForWindow(root));
+  if (dpi > 0 && ::ScreenToClient(root, &point)) {
+    args[flutter::EncodableValue("x")] =
+        flutter::EncodableValue(static_cast<double>(point.x) * 96.0 / dpi);
+    args[flutter::EncodableValue("y")] =
+        flutter::EncodableValue(static_cast<double>(point.y) * 96.0 / dpi);
+  }
+  NotifyChrome(root, "maximizeClick", flutter::EncodableValue(args));
+}
+
 int DipToPx(HWND window, int dip) {
   return ::MulDiv(dip, static_cast<int>(::GetDpiForWindow(window)), 96);
 }
@@ -293,7 +311,7 @@ bool HandleFrameMessage(HWND window,
       if (wparam == HTMAXBUTTON) {
         // 按下只给 Dart 一个信号用于 ripple / 按压态；Dart 合成 pointer
         // down 喂给 InkWell，真正的最大化动作等 release 信号后的 onTap。
-        NotifyChrome(window, "maximizeClick", flutter::EncodableValue(true));
+        NotifyMaximizeClick(window, lparam);
         SetMaximizePressed(window, true);
         // 保证按下后移出窗口 / 按钮时能收到 WM_NCMOUSELEAVE，
         // 及时清掉按下状态。

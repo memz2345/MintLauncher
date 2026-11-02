@@ -20,6 +20,7 @@ import '../widgets/mint_collapsible_card.dart';
 import '../widgets/mint_page.dart';
 import '../widgets/mint_refresh.dart';
 import '../widgets/page_background.dart' show mintDialogMaskColor;
+import '../widgets/pcl_hover.dart';
 import 'package:mint/ui/mint_icons.dart' show mintMiuixOf;
 
 // ───────────────────────── 目标目录 / 装载辅助 ─────────────────────────
@@ -933,103 +934,104 @@ class _HitCard extends StatelessWidget {
             ),
     );
     final tags = _tags.take(4).toList();
-    final row = Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              icon,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hit.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+    // 行动画与版本管理列表同源：PCL 悬浮底板（0.75→1 缩放 + 淡入淡出）+
+    // Material 风格下的水波；miuix 保持自己的按压遮罩，不吃 ripple。
+    final row = PclHoverSurface(
+      onTap: onTap,
+      borderRadius: 16,
+      ripple: !miuix,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            icon,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hit.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hit.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.35,
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        for (final tag in tags)
-                          _MiniTagChip(
-                            miuix: miuix,
-                            label: modrinthCategoryLabel(tag),
-                            onTap: () => onTagTap(tag),
-                          ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.download_outlined,
-                          size: 11,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          hit.displayDownloads,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.favorite_border,
-                          size: 11,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          hit.follows.toString(),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              // 和下载游戏页一样：右侧是明确的下载入口（打开详情选文件），
-              // 不再只是一个小箭头。
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: IconButton(
-                  tooltip: '下载 / 选择版本',
-                  onPressed: onTap,
-                  icon: Icon(
-                    Icons.download_outlined,
-                    size: 23,
-                    color: cs.primary,
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hit.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final tag in tags)
+                        _MiniTagChip(
+                          miuix: miuix,
+                          label: modrinthCategoryLabel(tag),
+                          onTap: () => onTagTap(tag),
+                        ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.download_outlined,
+                        size: 11,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        hit.displayDownloads,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.favorite_border,
+                        size: 11,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        hit.follows.toString(),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            // 和下载游戏页一样：右侧是明确的下载入口（打开详情选文件），
+            // 不再只是一个小箭头。
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: IconButton(
+                tooltip: '下载 / 选择版本',
+                onPressed: onTap,
+                icon: Icon(
+                  Icons.download_outlined,
+                  size: 23,
+                  color: cs.primary,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

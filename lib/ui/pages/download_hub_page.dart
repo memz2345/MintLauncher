@@ -13,6 +13,7 @@ import 'modrinth_browser_page.dart';
 import 'vanilla_versions_page.dart';
 import '../widgets/mint_page.dart';
 import '../widgets/page_background.dart' show MintPageBackgroundKey;
+import '../widgets/pcl_hover.dart';
 import 'package:mint/ui/mint_icons.dart' show mintMiuixOf;
 import 'package:mint/ui/widgets/mint_refresh.dart';
 
@@ -311,64 +312,64 @@ class _CategoryTile extends StatelessWidget {
         : cs.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Material(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(icon, size: 18, color: selected ? fg : cs.primary),
-                    if (badge)
-                      Positioned(
-                        top: -2,
-                        right: -3,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE5484D),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              width: 1.2,
-                              color: bg == Colors.transparent
-                                  ? Theme.of(context).colorScheme.surface
-                                  : bg,
-                            ),
+      child: PclHoverSurface(
+        onTap: onTap,
+        borderRadius: 12,
+        // 选中底色走 baseColor（常驻、不参与缩放），悬浮底板 + 按压缩放和
+        // 版本管理列表同一套动画。
+        ripple: !miuix,
+        baseColor: selected ? bg : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 18, color: selected ? fg : cs.primary),
+                  if (badge)
+                    Positioned(
+                      top: -2,
+                      right: -3,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5484D),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            width: 1.2,
+                            color: bg == Colors.transparent
+                                ? Theme.of(context).colorScheme.surface
+                                : bg,
                           ),
-                          child: Text(
-                            badgeLabel ?? '',
-                            style: const TextStyle(
-                              fontSize: 8.5,
-                              height: 1,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                        ),
+                        child: Text(
+                          badgeLabel ?? '',
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: fg,
                     ),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: fg,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

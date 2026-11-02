@@ -11,6 +11,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:mint/services/download_center.dart';
 import 'package:mint/services/app_locale_bridge.dart';
+import 'package:mint/services/gpu_preference.dart' show GpuProbe;
 import 'package:mint/services/ios_liquid_glass.dart';
 import 'package:mint/services/linux_window_chrome.dart';
 import 'package:mint/services/launcher/account.dart' show createOfflineAccount;
@@ -254,6 +255,9 @@ Future<void> main(List<String> args) async {
   );
   // Windows 10+ 窗口材质能力探测（Mica/Acrylic/Tabbed/Aero）。
   await WindowBackdrop.instance.ensureInitialized();
+  // MINT_GPU_PROBE_OUT=<路径> 时跑一遍选卡链路（Windows 注册表往返 /
+  // Linux 合成环境 + 子进程读回 DRI_PRIME），结果写进那个文件。
+  await GpuProbe.maybeRun();
   // 桌面虚拟触控：设置变化实时推给悬浮层（悬浮窗可见期间生效）。
   VTouchOverlayService.instance.attachSettings(settings);
 

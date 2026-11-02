@@ -676,111 +676,120 @@ class _VersionManagerPageState extends State<VersionManagerPage> {
           ),
         ),
       ],
-      body: (padding) => Stack(
-        children: [
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, padding.top + 6, 16, 12),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 760;
-                  if (!wide) {
-                    return _buildCompactPage(
-                      context,
-                      settings,
-                      controller,
-                      activeDir,
-                      ids,
-                      activeId,
-                      counts,
-                      metas,
-                    );
-                  }
-                  final versionPane = _buildVersionPane(
-                    context,
-                    settings,
-                    controller,
-                    activeDir,
-                    ids,
-                    activeId,
-                    cursor,
-                    metas,
-                    wide: true,
-                  );
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 左栏 = 可折叠的圆角卡片：默认展开，收起来只剩图标栏。
-                      MintCollapsiblePane(
-                        miuix: mintMiuixOf(context),
-                        storageKey: 'versionManagerDirs',
-                        title: '游戏目录',
-                        titleIcon: Icon(
-                          Icons.folder_outlined,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
+      body: (padding) => LayoutBuilder(
+        // 宽屏 = 左栏 + 右栏双列，添加目录的加号在侧栏标题行；窄屏（竖屏）
+        // 单列，加号回到右下角那颗大 FAB。阈值算上页面左右各 16 的内边距，
+        // 只在这一处判宽窄。
+        builder: (context, outer) {
+          final wide = outer.maxWidth - 32 >= 760;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, padding.top + 6, 16, 12),
+                  child: !wide
+                      ? _buildCompactPage(
+                          context,
+                          settings,
+                          controller,
+                          activeDir,
+                          ids,
+                          activeId,
+                          counts,
+                          metas,
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 左栏 = 可折叠的圆角卡片：默认展开，收起来只剩图标栏。
+                            MintCollapsiblePane(
+                              miuix: mintMiuixOf(context),
+                              storageKey: 'versionManagerDirs',
+                              title: '游戏目录',
+                              titleIcon: Icon(
+                                Icons.folder_outlined,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              expandedWidth: 272,
+                              headerTrailing: MintMiniFab(
+                                miuix: mintMiuixOf(context),
+                                tooltip: '添加游戏目录',
+                                onPressed: _addDirectory,
+                              ),
+                              headerCollapsed: MintMiniFab(
+                                miuix: mintMiuixOf(context),
+                                tooltip: '添加游戏目录',
+                                onPressed: _addDirectory,
+                              ),
+                              child: _buildDirectoryList(
+                                context,
+                                settings,
+                                controller,
+                                dirs,
+                                activeDir,
+                                counts,
+                              ),
+                              collapsedChild: _buildDirectoryRail(
+                                context,
+                                settings,
+                                controller,
+                                dirs,
+                                activeDir,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildVersionPane(
+                                context,
+                                settings,
+                                controller,
+                                activeDir,
+                                ids,
+                                activeId,
+                                cursor,
+                                metas,
+                                wide: true,
+                              ),
+                            ),
+                          ],
                         ),
-                        expandedWidth: 272,
-                        headerTrailing: MintTopBarAction(
-                          miuix: mintMiuixOf(context),
-                          icon: Icons.create_new_folder_outlined,
+                ),
+              ),
+              if (!wide)
+                Positioned(
+                  right: 20,
+                  bottom: padding.bottom + 36,
+                  child: mintMiuixOf(context)
+                      ? MiuixFloatingActionButton(
+                          onPressed: _addDirectory,
+                          child: Icon(
+                            Icons.create_new_folder_outlined,
+                            size: 25,
+                            color: MiuixTheme.of(context).colors.onPrimary,
+                          ),
+                        )
+                      : FloatingActionButton(
+                          heroTag: 'version-add-dir-fab',
                           tooltip: '添加游戏目录',
                           onPressed: _addDirectory,
+                          child: const Icon(
+                            Icons.create_new_folder_outlined,
+                            size: 24,
+                          ),
                         ),
-                        child: _buildDirectoryList(
-                          context,
-                          settings,
-                          controller,
-                          dirs,
-                          activeDir,
-                          counts,
-                        ),
-                        collapsedChild: _buildDirectoryRail(
-                          context,
-                          settings,
-                          controller,
-                          dirs,
-                          activeDir,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: versionPane),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-          Positioned(
-            right: 20,
-            bottom: padding.bottom + 36,
-            child: mintMiuixOf(context)
-                ? MiuixFloatingActionButton(
-                    onPressed: _addDirectory,
-                    child: Icon(
-                      Icons.create_new_folder_outlined,
-                      size: 25,
-                      color: MiuixTheme.of(context).colors.onPrimary,
-                    ),
-                  )
-                : FloatingActionButton(
-                    heroTag: 'version-add-dir-fab',
-                    tooltip: '添加游戏目录',
-                    onPressed: _addDirectory,
-                    child: const Icon(
-                      Icons.create_new_folder_outlined,
-                      size: 24,
-                    ),
-                  ),
-          ),
-        ],
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
   // ───────────────────────── 左侧目录 ─────────────────────────
 
-  /// 展开态：目录列表 + 底部「添加游戏目录」。卡面 / 标题 / 折叠按钮由
+  /// 展开态：目录列表。加号在卡片标题行（`headerTrailing`），底部不再重复
+  /// 一个「添加游戏目录」按钮。卡面 / 标题 / 折叠按钮由
   /// [MintCollapsiblePane] 提供。
   Widget _buildDirectoryList(
     BuildContext context,
@@ -790,74 +799,28 @@ class _VersionManagerPageState extends State<VersionManagerPage> {
     String activeDir,
     Map<String, int> counts,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            children: [
-              for (final dir in dirs) ...[
-                _DirectoryTile(
-                  miuix: mintMiuixOf(context),
-                  name: settings.gameDirName(dir),
-                  path: dir,
-                  count: counts[dir] ?? 0,
-                  selected: p.equals(dir, activeDir),
-                  running:
-                      controller.runningVersion != null &&
-                      p.equals(dir, activeDir),
-                  onTap: () => _activateDir(dir),
-                  onMenu: () => _directoryMenu(dir),
-                ),
-                const SizedBox(height: 2),
-              ],
-            ],
+        for (final dir in dirs) ...[
+          _DirectoryTile(
+            miuix: mintMiuixOf(context),
+            name: settings.gameDirName(dir),
+            path: dir,
+            count: counts[dir] ?? 0,
+            selected: p.equals(dir, activeDir),
+            running:
+                controller.runningVersion != null && p.equals(dir, activeDir),
+            onTap: () => _activateDir(dir),
+            onMenu: () => _directoryMenu(dir),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              MiuixHorizontalDivider(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 8),
-              if (mintMiuixOf(context, widget.miuix))
-                MiuixButton(
-                  onPressed: _addDirectory,
-                  cornerRadius: 14,
-                  minHeight: 40,
-                  insideMargin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, size: 18),
-                      SizedBox(width: 6),
-                      Text('添加游戏目录', style: TextStyle(fontSize: 13.5)),
-                    ],
-                  ),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: _addDirectory,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('添加游戏目录'),
-                ),
-            ],
-          ),
-        ),
+          const SizedBox(height: 2),
+        ],
       ],
     );
   }
 
-  /// 折叠态：只剩文件夹图标（选中项带底色），底部一个「+」。
+  /// 折叠态：只剩文件夹图标（选中项带底色）；加号在图标栏最上面（标题行）。
   Widget _buildDirectoryRail(
     BuildContext context,
     SettingsService settings,
@@ -866,40 +829,24 @@ class _VersionManagerPageState extends State<VersionManagerPage> {
     String activeDir,
   ) {
     final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 2),
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            children: [
-              for (final dir in dirs)
-                MintPaneRailButton(
-                  tooltip: settings.gameDirName(dir),
-                  selected: p.equals(dir, activeDir),
-                  onTap: () => _activateDir(dir),
-                  child: Icon(
-                    p.equals(dir, activeDir)
-                        ? Icons.folder_rounded
-                        : Icons.folder_outlined,
-                    size: 20,
-                    color: p.equals(dir, activeDir)
-                        ? cs.onPrimaryContainer
-                        : cs.onSurfaceVariant,
-                  ),
-                ),
-            ],
+        for (final dir in dirs)
+          MintPaneRailButton(
+            tooltip: settings.gameDirName(dir),
+            selected: p.equals(dir, activeDir),
+            onTap: () => _activateDir(dir),
+            child: Icon(
+              p.equals(dir, activeDir)
+                  ? Icons.folder_rounded
+                  : Icons.folder_outlined,
+              size: 20,
+              color: p.equals(dir, activeDir)
+                  ? cs.onPrimaryContainer
+                  : cs.onSurfaceVariant,
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: MintPaneRailButton(
-            tooltip: '添加游戏目录',
-            selected: false,
-            onTap: _addDirectory,
-            child: Icon(Icons.add, size: 20, color: cs.onSurfaceVariant),
-          ),
-        ),
       ],
     );
   }

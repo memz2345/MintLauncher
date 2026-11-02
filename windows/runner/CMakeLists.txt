@@ -9,6 +9,7 @@ project(runner LANGUAGES CXX)
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
   "main.cpp"
+  "gpu_host.cpp"
   "taskbar_progress.cpp"
   "window_backdrop.cpp"
   "window_frame.cpp"
@@ -40,6 +41,8 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib" "comctl32.lib")
 # 任务栏进度 ITaskbarList3：CoCreateInstance/COM 类 GUID。
 target_link_libraries(${BINARY_NAME} PRIVATE "ole32.lib" "uuid.lib")
+# mint/gpu：DXGI 枚举物理显卡 + 读写每应用显卡偏好注册表。
+target_link_libraries(${BINARY_NAME} PRIVATE "dxgi.lib" "shlwapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

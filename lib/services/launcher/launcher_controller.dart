@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../crash_analyzer.dart';
 import '../download_center.dart';
+import '../gpu_preference.dart';
 import '../log_window_service.dart' show LogLine, LogWindowService;
 import '../settings_service.dart';
 import '../system_memory.dart';
@@ -715,12 +716,15 @@ class LauncherController extends ChangeNotifier {
           windowMode == GameWindowMode.fullscreen;
       final useCpuBackend =
           eff.graphicsBackend == GraphicsBackend.cpu && !Platform.isWindows;
+      // Linux 混合显卡（Optimus / Switchable）靠 DRI_PRIME 挑 provider；
+      // Windows 用注册表里的每应用图形偏好（见 GpuService.apply）。
       final launchEnv = <String, String>{
         ...envVars,
         if (useCpuBackend) ...{
           'LIBGL_ALWAYS_SOFTWARE': '1',
           'GALLIUM_DRIVER': 'llvmpipe',
         },
+        ...gpuLaunchEnv(eff.gpuPreference, cpuBackend: useCpuBackend),
       };
       final assetLayout = resolveAssetLayout(
         gameDir,
@@ -769,6 +773,27 @@ class LauncherController extends ChangeNotifier {
 
       // ── 起进程 ──
       _setStage(stageProcess, LaunchStageStatus.running, '正在拉起游戏进程');
+      // 绑定渲染显卡必须在**进程起来之前**：Windows 由驱动在建 GL 上下文时读
+      // 每应用图形偏好，Linux 靠子进程环境变量，进程起来之后再改都只影响下次。
+      if (Platform.isWindows) {
+        final applied = await GpuService.instance.apply(
+          executable: command.executable,
+          preferenceId: eff.gpuPreference,
+        );
+        if (applied.isNotEmpty) log(applied);
+      } else if (Platform.isLinux && eff.gpuPreference.isNotEmpty) {
+        // 混合显卡笔电上「到底传没传下去」全靠这一行日志。
+        final env = gpuLaunchEnv(
+          eff.gpuPreference,
+          cpuBackend: useCpuBackend,
+        );
+        final label = GpuService.instance.labelFor(eff.gpuPreference);
+        log(
+          env.isEmpty
+              ? '渲染显卡：$label（已强制软件渲染，不设 DRI_PRIME）'
+              : '渲染显卡：$label → $env',
+        );
+      }
       final process = await Process.start(
         command.executable,
         command.args,

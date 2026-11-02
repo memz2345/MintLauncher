@@ -13,6 +13,7 @@ import 'package:mint/services/launcher/manifest.dart';
 import 'package:mint/services/launcher/modloader.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/ui/pages/accounts_page.dart';
+import 'package:mint/ui/pages/common.dart' show MintMiniFab;
 import 'package:mint/ui/pages/game_install_page.dart';
 import 'package:mint/ui/pages/loader_install_page.dart';
 import 'package:mint/ui/pages/home_page.dart';
@@ -184,7 +185,14 @@ void main() {
 
     expect(find.text('版本管理'), findsWidgets);
     expect(find.text('游戏目录'), findsOneWidget);
-    expect(find.text('添加游戏目录'), findsOneWidget);
+    // 宽屏：添加目录 = 侧栏标题行那颗 40dp 小 FAB；右下角的 60dp 大 FAB
+    // 只留给竖屏（MintMiniFab 在 miuix 下也画 MiuixFloatingActionButton，
+    // 所以按尺寸区分，不按类型）。
+    expect(find.byType(MintMiniFab), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(MiuixFloatingActionButton).first),
+      const Size(40, 40),
+    );
     expect(find.text('1.20.4'), findsWidgets);
     expect(find.text(secondName), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -196,10 +204,15 @@ void main() {
     expect(find.text('fabric-loader-0.16-1.20.4'), findsWidgets);
     expect(tester.takeException(), isNull);
 
-    // 窄屏（目录选择条 + 列表）也不能溢出。
+    // 窄屏（目录选择条 + 列表）也不能溢出，且加号回到右下角 FAB。
     _setSize(tester, const Size(480, 800));
     await tester.pumpAndSettle();
     expect(find.text('fabric-loader-0.16-1.20.4'), findsWidgets);
+    expect(find.byType(MintMiniFab), findsNothing);
+    expect(
+      tester.getSize(find.byType(MiuixFloatingActionButton)),
+      const Size(60, 60),
+    );
     expect(tester.takeException(), isNull);
   });
 

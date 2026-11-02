@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:mint/services/launcher/launcher_controller.dart';
 import 'package:mint/services/launcher/game_dir.dart';
 import 'package:mint/services/launcher/java_runtime.dart';
+import 'package:mint/services/gpu_preference.dart';
 import 'package:mint/services/settings_service.dart';
 import 'package:mint/services/system_memory.dart';
 import 'package:mint/services/theme_package.dart';
@@ -401,6 +402,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _pickGraphicsBackend(context, settings),
                 trailing: const Icon(Icons.chevron_right),
               ),
+              // 双显卡机器才有意义：Windows 写每应用图形偏好，Linux 设
+              // DRI_PRIME；Android 由渲染器档位决定，macOS 只有一张卡。
+              if (Platform.isWindows || Platform.isLinux)
+                TileRow(
+                  miuix: miuix,
+                  icon: Icons.developer_board_outlined,
+                  title: '渲染显卡',
+                  subtitle: GpuService.instance.labelFor(
+                    settings.gpuPreference,
+                  ),
+                  onTap: () => _pickGpuPreference(context, settings),
+                  trailing: const Icon(Icons.chevron_right),
+                ),
               // Android 专属：渲染器是「GL 翻译层」，不是画质档位 —— 换错了
               // 会直接进不去游戏，所以说明要写清取舍。
               if (Platform.isAndroid) ...[
@@ -1472,6 +1486,52 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     );
     if (result != null) settings.graphicsBackend = result;
+  }
+
+  /// 渲染显卡选择。Windows 的选项里多出「按卡名指定」—— 那些条目来自原生
+  /// DXGI 枚举（`mint/gpu` 通道）；没有原生实现（测试 / 别的平台）时只剩三档。
+  Future<void> _pickGpuPreference(
+    BuildContext context,
+    SettingsService settings,
+  ) async {
+    final adapters = await GpuService.instance.loadAdapters();
+    if (!context.mounted) return;
+    final windows = Platform.isWindows;
+    final result = await pushMintChoicePage<String>(
+      context,
+      miuix: mintMiuixOf(context),
+      title: '渲染显卡',
+      subtitle: windows
+          ? '写进 Windows「显示 → 图形」的每应用偏好，游戏下一次启动生效'
+          : 'Linux 混合显卡靠 DRI_PRIME 挑 provider',
+      selected: settings.gpuPreference,
+      options: [
+        const MintChoice(
+          value: kGpuAuto,
+          label: '自动',
+          subtitle: '不改动每应用图形偏好，交给系统 / 驱动',
+        ),
+        MintChoice(
+          value: kGpuPowerSaving,
+          label: windows ? '节能显卡' : '集成显卡',
+          subtitle: windows ? 'GpuPreference=1' : 'DRI_PRIME=0',
+        ),
+        MintChoice(
+          value: kGpuHighPerformance,
+          label: windows ? '高性能显卡' : '独立显卡',
+          subtitle: windows ? 'GpuPreference=2' : 'DRI_PRIME=1',
+        ),
+        for (final adapter in adapters)
+          MintChoice(
+            value: adapter.id,
+            label: adapter.name,
+            subtitle:
+                '${adapter.memoryLabel} · ${adapter.specific}'
+                '${adapter.preferred ? ' · 系统默认' : ''}',
+          ),
+      ],
+    );
+    if (result != null) settings.gpuPreference = result;
   }
 
   /// Android 渲染器选择。

@@ -6,6 +6,7 @@
 #include "desktop_multi_window/desktop_multi_window_plugin.h"
 
 #include "taskbar_progress.h"
+#include "gpu_host.h"
 #include "window_backdrop.h"
 #include "window_frame.h"
 #include "vtouch_host.h"
@@ -94,6 +95,19 @@ bool FlutterWindow::OnCreate() {
           std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
               result) {
         mint::HandleBackdropMethod(hwnd, call, std::move(result));
+      });
+
+  // 游戏渲染用哪块 GPU：DXGI 枚举 + Windows 每应用显卡偏好注册表。
+  gpu_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(), "mint/gpu",
+          &flutter::StandardMethodCodec::GetInstance());
+  gpu_channel_->SetMethodCallHandler(
+      [hwnd = GetHandle()](
+          const flutter::MethodCall<flutter::EncodableValue>& call,
+          std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+              result) {
+        mint::HandleGpuMethod(hwnd, call, std::move(result));
       });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

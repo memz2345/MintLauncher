@@ -21,6 +21,12 @@ class WindowCaptionSignals {
   /// 原生处理了最大化热区的点击；每点一次 +1，用于触发 ripple。
   final ValueNotifier<int> maximizeClick = ValueNotifier<int>(0);
 
+  /// 最近一次 [maximizeClick] 的按点（窗口客户区逻辑像素）。
+  ///
+  /// 最大化按钮的水波必须和另外三个金刚一样从鼠标位置长出来，所以原生把
+  /// 按下点一起回传；老版本原生只回传 bool 时为 null，Dart 退回按钮中心。
+  Offset? maximizePressPosition;
+
   /// 原生最大化热区的按下收场；每收场一次 +1。
   ///
   /// 值本身只用来计数，是否真正激活看 [maximizeReleaseActivated]。
@@ -40,6 +46,12 @@ class WindowCaptionSignals {
           final value = call.arguments;
           maximizeHover.value = value is bool ? value : false;
         case 'maximizeClick':
+          final args = call.arguments;
+          final x = args is Map ? args['x'] : null;
+          final y = args is Map ? args['y'] : null;
+          maximizePressPosition = (x is double && y is double)
+              ? Offset(x, y)
+              : null;
           maximizeClick.value = maximizeClick.value + 1;
         case 'maximizeRelease':
           maximizeReleaseActivated = call.arguments == true;
@@ -65,5 +77,6 @@ class WindowCaptionSignals {
     maximizeClick.value = 0;
     maximizeRelease.value = 0;
     maximizeReleaseActivated = false;
+    maximizePressPosition = null;
   }
 }
